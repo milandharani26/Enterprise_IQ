@@ -2,8 +2,8 @@ import { create } from "zustand";
 
 interface User {
   id: string;
-  name: string;
   email: string;
+  name?: string; // Optional: JWT payload only contains sub + email
 }
 
 interface AuthState {
