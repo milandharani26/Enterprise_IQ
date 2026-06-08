@@ -1,12 +1,17 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { AuthDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { MailService } from '../mail/mail.service';
-
+import { MailService } from '../assistants/mail/mail.service';
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import Redis from 'ioredis';
 @Injectable()
 export class AuthService {
   constructor(
@@ -14,6 +19,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private mailService: MailService,
+    @InjectRedis() private readonly redis: Redis,
   ) {}
 
   async signUp(authDto: AuthDto) {
@@ -39,7 +45,10 @@ export class AuthService {
       throw new BadRequestException('Invalid credentials');
     }
 
-    const passwordMatches = await bcrypt.compare(authDto.password, user.password!);
+    const passwordMatches = await bcrypt.compare(
+      authDto.password,
+      user.password,
+    );
     if (!passwordMatches) {
       throw new BadRequestException('Invalid credentials');
     }
@@ -49,12 +58,12 @@ export class AuthService {
     return tokens;
   }
 
-  async googleLogin(req: any) {
-    if (!req.user) {
+  async googleLogin(googleUser: { email?: string }) {
+    if (!googleUser || !googleUser.email) {
       throw new UnauthorizedException('No user from google');
     }
 
-    const email = req.user.email;
+    const email = googleUser.email;
     let user = await this.usersService.findByEmail(email);
 
     if (!user) {
@@ -70,39 +79,53 @@ export class AuthService {
   async forgotPassword(email: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
-      return { message: 'If that email is in our system, a reset link has been sent.' };
+      return {
+        message: 'If that email is in our system, a reset link has been sent.',
+      };
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const hashedResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const hashedResetToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
 
-    const expires = new Date();
-    expires.setHours(expires.getHours() + 1);
-
-    await this.usersService.update(user.id, {
-      resetPasswordToken: hashedResetToken,
-      resetPasswordExpires: expires,
-    });
+    await this.redis.set(
+      `reset_token:${hashedResetToken}`,
+      user.id,
+      'EX',
+      3600,
+    );
 
     await this.mailService.sendPasswordResetEmail(user.email, resetToken);
-    return { message: 'If that email is in our system, a reset link has been sent.' };
+    return {
+      message: 'If that email is in our system, a reset link has been sent.',
+    };
   }
 
   async resetPassword(token: string, newPassword: string) {
-    const hashedResetToken = crypto.createHash('sha256').update(token).digest('hex');
-    const user = await this.usersService.findByResetToken(hashedResetToken);
+    const hashedResetToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
 
-    if (!user || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+    const userId = await this.redis.get(`reset_token:${hashedResetToken}`);
+    if (!userId) {
       throw new BadRequestException('Invalid or expired password reset token');
+    }
+
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new BadRequestException('User not found');
     }
 
     const hashedPassword = await this.hashData(newPassword);
 
     await this.usersService.update(user.id, {
       password: hashedPassword,
-      resetPasswordToken: null as any,
-      resetPasswordExpires: null as any,
     });
+
+    await this.redis.del(`reset_token:${hashedResetToken}`);
 
     return { message: 'Password has been successfully reset' };
   }

@@ -3,9 +3,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { UsersModule } from './users/users.module';
-import { AuthModule } from './auth/auth.module';
-import { MailModule } from './mail/mail.module';
+import { UsersModule } from './modules/users/users.module';
+import { RolesModule } from './modules/roles/roles.module';
+import { AssistantsModule } from './modules/assistants/assistants.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { MailModule } from './modules/assistants/mail/mail.module';
+import { RedisModule } from '@nestjs-modules/ioredis';
 
 @Module({
   imports: [
@@ -22,11 +25,21 @@ import { MailModule } from './mail/mail.module';
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true, // Note: Set to false in production
+        synchronize: false, // Using migrations instead
+      }),
+      inject: [ConfigService],
+    }),
+    RedisModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'single',
+        url: `redis://${configService.get<string>('REDIS_HOST', 'localhost')}:${configService.get<string>('REDIS_PORT', '6379')}`,
       }),
       inject: [ConfigService],
     }),
     UsersModule,
+    RolesModule,
+    AssistantsModule,
     AuthModule,
     MailModule,
   ],
