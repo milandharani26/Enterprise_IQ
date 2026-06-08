@@ -129,7 +129,7 @@ export function SignUpForm() {
           className="absolute -top-16 -right-16 w-48 h-48 pointer-events-none"
           style={{
             background:
-              "radial-gradient(circle, rgba(52,211,153,0.12) 0%, rgba(52,211,153,0.04) 45%, transparent 70%)",
+              "radial-gradient(circle, var(--brand-12) 0%, var(--brand-4) 45%, transparent 70%)",
           }}
         />
         {/* Subtle top border glow */}
@@ -137,7 +137,7 @@ export function SignUpForm() {
           className="absolute top-0 left-8 right-8 h-px pointer-events-none"
           style={{
             background:
-              "linear-gradient(90deg, transparent, rgba(52,211,153,0.35), transparent)",
+              "linear-gradient(90deg, transparent, var(--brand-35), transparent)",
           }}
         />
 
@@ -170,7 +170,7 @@ export function SignUpForm() {
                 type="email"
                 placeholder="you@company.com"
                 className={`pl-9 h-10 rounded-lg text-sm placeholder:text-muted-foreground/40 bg-muted/40 border-border text-foreground
-                  focus-visible:ring-1 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/40
+                  focus-visible:ring-1 focus-visible:ring-[var(--brand-30)] focus-visible:border-[var(--brand-40)]
                   transition-all duration-150
                   ${emailError ? "border-red-400/50 focus-visible:ring-red-400/20" : ""}`}
               />
@@ -205,7 +205,7 @@ export function SignUpForm() {
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 className={`pl-9 pr-9 h-10 rounded-lg text-sm placeholder:text-muted-foreground/40 bg-muted/40 border-border text-foreground
-                  focus-visible:ring-1 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/40
+                  focus-visible:ring-1 focus-visible:ring-[var(--brand-30)] focus-visible:border-[var(--brand-40)]
                   transition-all duration-150
                   ${passwordError ? "border-red-400/50 focus-visible:ring-red-400/20" : ""}`}
               />
