@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -12,27 +20,35 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  async googleAuth(@Req() req: Request) {
+  async googleAuth() {
     // Guard redirects to google
   }
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req: Request, @Res() res: Response) {
-    const tokens = await this.authService.googleLogin(req);
+    const tokens = await this.authService.googleLogin(
+      req.user as { email?: string },
+    );
     this.setTokensInCookies(res, tokens);
     res.redirect('http://localhost:3000'); // Redirect to frontend/home
   }
 
   @Post('signup')
-  async signup(@Body() authDto: AuthDto, @Res({ passthrough: true }) res: Response) {
+  async signup(
+    @Body() authDto: AuthDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const tokens = await this.authService.signUp(authDto);
     this.setTokensInCookies(res, tokens);
     return tokens;
   }
 
   @Post('signin')
-  async signin(@Body() authDto: AuthDto, @Res({ passthrough: true }) res: Response) {
+  async signin(
+    @Body() authDto: AuthDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const tokens = await this.authService.signIn(authDto);
     this.setTokensInCookies(res, tokens);
     return tokens;
@@ -45,10 +61,16 @@ export class AuthController {
 
   @Post('reset-password')
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
-    return this.authService.resetPassword(resetPasswordDto.token, resetPasswordDto.newPassword);
+    return this.authService.resetPassword(
+      resetPasswordDto.token,
+      resetPasswordDto.newPassword,
+    );
   }
 
-  private setTokensInCookies(res: Response, tokens: { accessToken: string, refreshToken: string }) {
+  private setTokensInCookies(
+    res: Response,
+    tokens: { accessToken: string; refreshToken: string },
+  ) {
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
