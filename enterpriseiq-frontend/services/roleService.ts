@@ -13,10 +13,10 @@ export const roleService = {
     roleId: string;
     assistents: string[];
   }): Promise<string> => {
-    const response = await apiClient.patch<RoleResponse>(
-      `/roles/${roleId}`,
-      assistents,
-    );
+    // Wrap the array inside an object matching your DTO field key
+    const response = await apiClient.patch<RoleResponse>(`/roles/${roleId}`, {
+      assistant_ids: assistents, // Send as a key-value object
+    });
     return response.data.message;
   },
 };
