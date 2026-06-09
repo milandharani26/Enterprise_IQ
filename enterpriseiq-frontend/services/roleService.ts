@@ -6,4 +6,17 @@ export const roleService = {
     const response = await apiClient.get<RoleResponse>("/roles");
     return response.data.data;
   },
+  editRole: async ({
+    roleId,
+    assistents,
+  }: {
+    roleId: string;
+    assistents: string[];
+  }): Promise<string> => {
+    const response = await apiClient.patch<RoleResponse>(
+      `/roles/${roleId}`,
+      assistents,
+    );
+    return response.data.message;
+  },
 };

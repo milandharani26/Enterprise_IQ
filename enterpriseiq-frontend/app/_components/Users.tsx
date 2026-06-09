@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { getAllUsers } from "@/hooks/queries/useUserQueries";
 import { getAllRoles } from "@/hooks/queries/useRoleQueries";
+import { useEditUserRoleMutation } from "@/hooks/mutations/useUserMutation";
 import { UserWithRole } from "@/types/auth";
 import { Role } from "@/types/role";
 
@@ -193,9 +194,12 @@ export default function UsersManagementPage() {
   };
   const { data: dynamicRoles, isLoading: isRolesLoading } = getAllRoles();
 
+  // Instantiate the React Query mutation engine
+  const { mutateAsync: editUserRole, isPending: isSavingRole } =
+    useEditUserRoleMutation();
+
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState<string | null>(null);
-  const [localRoles, setLocalRoles] = useState<Record<string, string>>({});
 
   // Modal Context Configurations
   const [editingUser, setEditingUser] = useState<SelectedUserStructure | null>(
@@ -217,14 +221,12 @@ export default function UsersManagementPage() {
     );
   }
 
+  // Derive final values strictly from query caches (local state maps eliminated)
   const users =
-    serverUsers?.map((u) => {
-      const defaultRoleName = u.role?.name || "Viewer";
-      return {
-        ...u,
-        roleName: localRoles[u.id] ?? defaultRoleName,
-      };
-    }) || [];
+    serverUsers?.map((u) => ({
+      ...u,
+      roleName: u.role?.name || "Viewer",
+    })) || [];
 
   const filtered = users.filter((u) => {
     const matchSearch =
@@ -242,13 +244,36 @@ export default function UsersManagementPage() {
     setModalRoleSelection(currentRole);
   };
 
-  const handleSaveModalRole = () => {
-    if (editingUser) {
-      setLocalRoles((prev) => ({
-        ...prev,
-        [editingUser.id]: modalRoleSelection,
-      }));
+  // Async save handler running the network mutation request
+  const handleSaveModalRole = async () => {
+    if (!editingUser) return;
+
+    // Find full DB entity corresponding to current text choice
+    const targetRoleObj = safeRoles.find(
+      (r) => r.name.toLowerCase() === modalRoleSelection.toLowerCase(),
+    );
+
+    if (!targetRoleObj) {
+      console.error(
+        "Selected role was not found in static records configuration mapping database lists.",
+      );
+      return;
+    }
+
+    try {
+      // Execute transaction using unified parameter object layout
+      await editUserRole({
+        userId: editingUser.id,
+        roleId: targetRoleObj.id,
+      });
+
+      // Clear layout modal context safely upon successful mutation invalidation
       setEditingUser(null);
+    } catch (error) {
+      console.error(
+        "Failed to commit network update mutations to remote access control databases:",
+        error,
+      );
     }
   };
 
@@ -364,7 +389,6 @@ export default function UsersManagementPage() {
 
         {/* Table Container */}
         <div className="overflow-x-auto min-h-[250px] w-full">
-          {/* Unified Table Engine */}
           <div className="w-full min-w-[700px] text-left border-collapse select-none">
             {/* ── Table Header ── */}
             <div
@@ -420,7 +444,7 @@ export default function UsersManagementPage() {
                         </p>
                       </div>
 
-                      {/* Static Styled Clean Text Display */}
+                      {/* Role Badge */}
                       <div>
                         <span
                           className="text-xs font-bold px-2.5 py-1 rounded-lg inline-block architecture-badge"
@@ -434,7 +458,7 @@ export default function UsersManagementPage() {
                         </span>
                       </div>
 
-                      {/* Joined */}
+                      {/* Joined Date */}
                       <div
                         className="text-xs font-medium whitespace-nowrap"
                         style={{ color: "var(--color-text-secondary)" }}
@@ -445,7 +469,7 @@ export default function UsersManagementPage() {
                             : new Date().toLocaleDateString())}
                       </div>
 
-                      {/* Unified Actions Column Engine */}
+                      {/* Actions Trigger */}
                       <div className="flex justify-center">
                         <RowActions
                           onEdit={() =>
@@ -513,7 +537,7 @@ export default function UsersManagementPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setEditingUser(null)}
+              onClick={!isSavingRole ? () => setEditingUser(null) : undefined}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
 
@@ -542,13 +566,14 @@ export default function UsersManagementPage() {
                 </div>
                 <button
                   onClick={() => setEditingUser(null)}
-                  className="p-1 rounded-lg text-[var(--color-text-tertiary)] hover:bg-current/5 transition-colors"
+                  disabled={isSavingRole}
+                  className="p-1 rounded-lg text-[var(--color-text-tertiary)] hover:bg-current/5 transition-colors disabled:opacity-40"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Informational Group */}
+              {/* Fields Layout */}
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">
@@ -578,15 +603,16 @@ export default function UsersManagementPage() {
                 </div>
               </div>
 
-              {/* Action Actions Control Row */}
+              {/* Actions Footer */}
               <div
                 className="flex items-center justify-end gap-2.5 mt-2 border-t pt-4"
                 style={{ borderColor: "var(--color-border-primary)" }}
               >
                 <button
                   type="button"
+                  disabled={isSavingRole}
                   onClick={() => setEditingUser(null)}
-                  className="text-xs px-4 py-2 rounded-xl font-semibold transition-colors border"
+                  className="text-xs px-4 py-2 rounded-xl font-semibold transition-colors border disabled:opacity-50"
                   style={{
                     background: "transparent",
                     borderColor: "var(--color-border-primary)",
@@ -597,10 +623,21 @@ export default function UsersManagementPage() {
                 </button>
                 <button
                   type="button"
+                  disabled={
+                    isSavingRole ||
+                    editingUser.currentRole === modalRoleSelection
+                  }
                   onClick={handleSaveModalRole}
-                  className="btn-gradient text-xs px-4 py-2 rounded-xl font-bold text-white shadow-md hover:opacity-90 transition-opacity"
+                  className="btn-gradient text-xs px-4 py-2 rounded-xl font-bold text-white shadow-md hover:opacity-90 transition-opacity flex items-center gap-2 min-w-[120px] justify-center disabled:opacity-50"
                 >
-                  Save Workspace Changes
+                  {isSavingRole ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Workspace Changes"
+                  )}
                 </button>
               </div>
             </motion.div>

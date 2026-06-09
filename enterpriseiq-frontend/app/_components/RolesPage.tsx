@@ -15,84 +15,10 @@ import {
 
 // Hook and Type Imports
 import { getAllRoles } from "@/hooks/queries/useRoleQueries";
+import { useQuery } from "@tanstack/react-query";
+import { assistantService } from "@/services/assistantService";
+import { useEditUserRoleMutation } from "@/hooks/mutations/useRoleMutation";
 import { Role as ApiRole } from "@/types/role";
-
-interface Assistant {
-  id: string;
-  label: string;
-  description: string;
-  restricted?: boolean;
-}
-
-const ASSISTANT_GROUPS: { group: string; items: Assistant[] }[] = [
-  {
-    group: "Core Productivity",
-    items: [
-      {
-        id: "asst.query_runner",
-        label: "Query Runner Assistant",
-        description: "Executes base level AI models and formulas",
-      },
-      {
-        id: "asst.data_exporter",
-        label: "Data Export Assistant",
-        description: "Compiles and downloads session results",
-      },
-      {
-        id: "asst.session_cleaner",
-        label: "Session Manager Assistant",
-        description: "Prunes inactive chat arrays and histories",
-      },
-    ],
-  },
-  {
-    group: "Workspace Integrations",
-    items: [
-      {
-        id: "asst.ws_analyst",
-        label: "Workspace Analyst",
-        description: "Reads overall workspace metrics and status",
-      },
-      {
-        id: "asst.ws_architect",
-        label: "Workspace Architect",
-        description: "Edits layouts and environment configurations",
-      },
-      {
-        id: "asst.billing_bot",
-        label: "Billing & Ledger Assistant",
-        description: "Monitors consumption rates and updates invoices",
-        restricted: true,
-      },
-    ],
-  },
-  {
-    group: "Supervision & Governance",
-    items: [
-      {
-        id: "asst.user_moderator",
-        label: "User Provisioning Assistant",
-        description: "Invites, suspends, or monitors active users",
-      },
-      {
-        id: "asst.role_governor",
-        label: "Role Allocation Assistant",
-        description: "Creates and edits system security boundaries",
-      },
-      {
-        id: "asst.security_officer",
-        label: "API Access Key Master",
-        description: "Spawns and revokes production API gateways",
-        restricted: true,
-      },
-      {
-        id: "asst.audit_recorder",
-        label: "Audit Trail Inspector",
-        description: "Maintains full read tracking over system logs",
-      },
-    ],
-  },
-];
 
 // Helper to determine role colors dynamically based on code or name
 const getRoleColor = (roleCode: string) => {
@@ -117,6 +43,7 @@ function Toggle({
 }) {
   return (
     <button
+      type="button"
       onClick={!disabled ? onChange : undefined}
       className="relative w-9 h-5 rounded-full transition-all duration-200 shrink-0"
       style={{
@@ -137,8 +64,28 @@ function Toggle({
 }
 
 export default function RolesPage() {
-  // Fetching dynamic dynamic data via React Query
-  const { data: dynamicRoles, isLoading, isError, error } = getAllRoles();
+  // Fetching dynamic role data via React Query
+  const {
+    data: dynamicRoles,
+    isLoading: isRolesLoading,
+    isError: isRolesError,
+    error: rolesError,
+  } = getAllRoles();
+
+  // Fetching dynamic assistants data from backend
+  const {
+    data: backendAssistants,
+    isLoading: isAssistantsLoading,
+    isError: isAssistantsError,
+    error: assistantsError,
+  } = useQuery({
+    queryKey: ["assistants"],
+    queryFn: assistantService.getAllAssistents,
+  });
+
+  // Initialize your role mutation hook
+  const { mutate: editRolePermissions, isPending: isSaving } =
+    useEditUserRoleMutation();
 
   const [selectedRole, setSelectedRole] = useState<ApiRole | null>(null);
 
@@ -149,11 +96,25 @@ export default function RolesPage() {
     }
   }, [dynamicRoles, selectedRole]);
 
-  // Aggregate total flat assistants count from layout configuration schemas
-  const totalAssistantsCount = ASSISTANT_GROUPS.reduce(
-    (acc, group) => acc + group.items.length,
-    0,
-  );
+  // Handle live role updates from cache revalidations without resetting active user selection
+  useEffect(() => {
+    if (dynamicRoles && selectedRole) {
+      const updatedRoleData = dynamicRoles.find(
+        (r) => r.id === selectedRole.id,
+      );
+      if (updatedRoleData) {
+        // Only override if the user is not actively mid-edit or to synchronize freshly saved server data
+        if (!isSaving) {
+          setSelectedRole(updatedRoleData);
+        }
+      }
+    }
+  }, [dynamicRoles, isSaving]);
+
+  // Combined validation loading states
+  const isLoading = isRolesLoading || isAssistantsLoading;
+  const isError = isRolesError || isAssistantsError;
+  const combinedError = rolesError || assistantsError;
 
   // Handle Loading View
   if (isLoading) {
@@ -179,8 +140,8 @@ export default function RolesPage() {
             Failed to Synchronize Access Control Lists
           </h3>
           <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-            {error instanceof Error
-              ? error.message
+            {combinedError instanceof Error
+              ? combinedError.message
               : "An unknown communication issue occurred."}
           </p>
         </div>
@@ -188,8 +149,33 @@ export default function RolesPage() {
     );
   }
 
-  // Active assistant details for the selected role
+  const totalAssistantsCount = backendAssistants?.length || 0;
   const activeCount = selectedRole?.assistant_ids?.length || 0;
+
+  // Handler to toggle an assistant id dynamically within the active role's state array
+  const handleToggleAssistant = (assistantId: string) => {
+    if (!selectedRole) return;
+
+    const currentIds = selectedRole.assistant_ids || [];
+    const updatedIds = currentIds.includes(assistantId)
+      ? currentIds.filter((id) => id !== assistantId)
+      : [...currentIds, assistantId];
+
+    setSelectedRole({
+      ...selectedRole,
+      assistant_ids: updatedIds,
+    });
+  };
+
+  // Handler to submit configuration arrays to backend patch api endpoints
+  const handleSaveChanges = () => {
+    if (!selectedRole) return;
+
+    editRolePermissions({
+      roleId: selectedRole.id,
+      assistents: selectedRole.assistant_ids || [],
+    });
+  };
 
   return (
     <div className="mesh-bg min-h-full p-6 space-y-6">
@@ -235,7 +221,9 @@ export default function RolesPage() {
           {dynamicRoles?.map((role, i) => {
             const isSelected = selectedRole?.id === role.id;
             const roleColor = getRoleColor(role.role_code);
-            const count = role.assistant_ids?.length || 0;
+            const count = isSelected
+              ? selectedRole?.assistant_ids?.length || 0
+              : role.assistant_ids?.length || 0;
 
             return (
               <motion.div
@@ -247,7 +235,9 @@ export default function RolesPage() {
                   duration: 0.35,
                   ease: [0.22, 1, 0.36, 1],
                 }}
-                onClick={() => setSelectedRole(role)}
+                onClick={() =>
+                  setSelectedRole(isSelected ? selectedRole : role)
+                }
                 className="glass-card p-4 cursor-pointer transition-all duration-200"
                 style={{
                   borderColor: isSelected
@@ -397,111 +387,99 @@ export default function RolesPage() {
                 )}
               </div>
 
-              {/* Assistant groups array */}
-              <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(100vh-320px)] scrollbar-thin">
-                {ASSISTANT_GROUPS.map((group, gi) => (
-                  <motion.div
-                    key={group.group}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      delay: 0.2 + gi * 0.07,
-                      duration: 0.35,
-                      ease: [0.22, 1, 0.36, 1],
-                    }}
-                  >
-                    {/* Group header */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <p
-                        className="text-[11px] font-semibold uppercase tracking-widest"
-                        style={{ color: "var(--color-text-tertiary)" }}
-                      >
-                        {group.group}
-                      </p>
-                      <div
-                        className="flex-1 h-px"
-                        style={{ background: "var(--color-border-primary)" }}
-                      />
-                    </div>
+              {/* Dynamic Assistant Grid List */}
+              <div className="p-6 space-y-2 overflow-y-auto max-h-[calc(100vh-320px)] scrollbar-thin">
+                {backendAssistants && backendAssistants.length > 0 ? (
+                  backendAssistants.map((asst) => {
+                    const enabled = !!selectedRole.assistant_ids?.includes(
+                      asst.id,
+                    );
+                    const isAdmin =
+                      selectedRole.role_code?.toLowerCase() === "admin";
+                    const hasActiveEngine = asst.is_active !== false;
 
-                    {/* Assistant listing grid/rows */}
-                    <div className="space-y-2">
-                      {group.items.map((asst) => {
-                        // Structural bridging checking against incoming ApiRole array
-                        const enabled = !!selectedRole.assistant_ids?.includes(
-                          asst.id,
-                        );
-                        const isAdmin =
-                          selectedRole.role_code?.toLowerCase() === "admin";
-                        return (
-                          <div
-                            key={asst.id}
-                            className="flex items-center justify-between p-3.5 rounded-xl transition-colors"
-                            style={{
-                              background: asst.restricted
-                                ? "var(--color-danger-bg)"
-                                : "var(--color-bg-secondary)",
-                              border: asst.restricted
-                                ? "1px solid var(--color-danger)22"
-                                : "1px solid var(--color-border-primary)",
-                            }}
-                          >
-                            <div className="flex items-start gap-3">
-                              {asst.restricted && (
-                                <AlertTriangle
-                                  className="w-3.5 h-3.5 mt-0.5 shrink-0"
-                                  style={{ color: "var(--color-danger)" }}
-                                />
-                              )}
-                              {!asst.restricted && enabled && (
-                                <Check
-                                  className="w-3.5 h-3.5 mt-0.5 shrink-0"
-                                  style={{ color: "var(--color-success)" }}
-                                />
-                              )}
-                              {!asst.restricted && !enabled && (
-                                <div
-                                  className="w-3.5 h-3.5 mt-0.5 shrink-0 rounded-full border-2"
-                                  style={{
-                                    borderColor:
-                                      "var(--color-border-secondary)",
-                                  }}
-                                />
-                              )}
-                              <div>
-                                <p
-                                  className="text-xs font-semibold"
-                                  style={{
-                                    color: asst.restricted
-                                      ? "var(--color-danger)"
-                                      : "var(--color-text-primary)",
-                                  }}
-                                >
-                                  {asst.label}
-                                </p>
-                                <p
-                                  className="text-[11px] mt-0.5"
-                                  style={{
-                                    color: "var(--color-text-tertiary)",
-                                  }}
-                                >
-                                  {asst.description}
-                                </p>
-                              </div>
-                            </div>
-                            <Toggle
-                              checked={enabled}
-                              onChange={() => {
-                                // Left unmodified as requested
-                              }}
-                              disabled={isAdmin}
+                    return (
+                      <div
+                        key={asst.id}
+                        className="flex items-center justify-between p-3.5 rounded-xl transition-colors"
+                        style={{
+                          background: !hasActiveEngine
+                            ? "var(--color-danger-bg)"
+                            : "var(--color-bg-secondary)",
+                          border: !hasActiveEngine
+                            ? "1px solid var(--color-danger)22"
+                            : "1px solid var(--color-border-primary)",
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          {!hasActiveEngine && (
+                            <AlertTriangle
+                              className="w-3.5 h-3.5 mt-0.5 shrink-0"
+                              style={{ color: "var(--color-danger)" }}
                             />
+                          )}
+                          {hasActiveEngine && enabled && (
+                            <Check
+                              className="w-3.5 h-3.5 mt-0.5 shrink-0"
+                              style={{ color: "var(--color-success)" }}
+                            />
+                          )}
+                          {hasActiveEngine && !enabled && (
+                            <div
+                              className="w-3.5 h-3.5 mt-0.5 shrink-0 rounded-full border-2"
+                              style={{
+                                borderColor: "var(--color-border-secondary)",
+                              }}
+                            />
+                          )}
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p
+                                className="text-xs font-semibold"
+                                style={{
+                                  color: !hasActiveEngine
+                                    ? "var(--color-danger)"
+                                    : "var(--color-text-primary)",
+                                }}
+                              >
+                                {asst.name}
+                              </p>
+                              <span className="text-[9px] font-mono opacity-60 px-1.5 py-0.5 rounded bg-[var(--color-bg-elevated)]">
+                                {asst.assistant_code}
+                              </span>
+                            </div>
+                            <p
+                              className="text-[11px] mt-0.5"
+                              style={{
+                                color: "var(--color-text-tertiary)",
+                              }}
+                            >
+                              {asst.config?.system_prompt ? (
+                                <span className="line-clamp-1 italic">
+                                  "{asst.config.system_prompt}"
+                                </span>
+                              ) : (
+                                <span className="opacity-50 italic">
+                                  No system prompt description configured.
+                                </span>
+                              )}
+                            </p>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-                ))}
+                        </div>
+                        <Toggle
+                          checked={isAdmin || enabled}
+                          onChange={() => handleToggleAssistant(asst.id)}
+                          disabled={isAdmin || isSaving} // Disable toggle while saving query requests
+                        />
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="py-12 text-center text-xs text-[var(--color-text-tertiary)]">
+                    No matching systemic engine assistants discovered on this
+                    server pool.
+                  </div>
+                )}
               </div>
 
               {/* Action configurations panel */}
@@ -513,7 +491,15 @@ export default function RolesPage() {
                 }}
               >
                 <button
-                  className="px-4 py-2 text-sm font-semibold rounded-xl transition-colors hover:opacity-70"
+                  type="button"
+                  disabled={isSaving}
+                  onClick={() => {
+                    const original = dynamicRoles?.find(
+                      (r) => r.id === selectedRole.id,
+                    );
+                    if (original) setSelectedRole(original);
+                  }}
+                  className="px-4 py-2 text-sm font-semibold rounded-xl transition-colors hover:opacity-70 disabled:opacity-50"
                   style={{
                     color: "var(--color-text-secondary)",
                     background: "var(--color-bg-elevated)",
@@ -522,8 +508,17 @@ export default function RolesPage() {
                 >
                   Reset
                 </button>
-                <button className="btn-gradient px-5 py-2 text-sm rounded-xl">
-                  Save Changes
+                <button
+                  type="button"
+                  disabled={
+                    isSaving ||
+                    selectedRole.role_code?.toLowerCase() === "admin"
+                  }
+                  className="btn-gradient px-5 py-2 text-sm rounded-xl flex items-center gap-2 disabled:opacity-60"
+                  onClick={handleSaveChanges}
+                >
+                  {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {isSaving ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </>

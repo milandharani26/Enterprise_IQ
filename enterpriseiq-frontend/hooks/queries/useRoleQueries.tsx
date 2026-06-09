@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 
 export function getAllRoles() {
   return useQuery<Role[]>({
-    queryKey: ["roles"],
+    queryKey: ["all-roles"],
     queryFn: roleService.getAllRoles,
   });
 }
