@@ -4,6 +4,8 @@ interface User {
   id: string;
   email: string;
   name?: string; // Optional: JWT payload only contains sub + email
+  role?: string;
+  roleId?: string;
 }
 
 interface AuthState {

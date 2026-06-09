@@ -7,7 +7,7 @@ import {
 } from "@/types/auth";
 
 // Backend base URL — used for server-redirect flows like Google OAuth
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export const authService = {
   /**
@@ -20,6 +20,7 @@ export const authService = {
       "/auth/signin",
       credentials,
     );
+    console.log(response.data.data);
     return response.data.data;
   },
 

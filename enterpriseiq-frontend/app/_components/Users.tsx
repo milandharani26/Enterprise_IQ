@@ -10,74 +10,10 @@ import {
   Users,
   Filter,
 } from "lucide-react";
+import { getAllUsers } from "@/hooks/queries/useUserQueries";
+import { UserWithRole } from "@/types/auth";
 
-const ROLES = ["Admin", "Editor", "Viewer"];
-
-const INITIAL_USERS = [
-  {
-    id: "1",
-    name: "Priyank Godhani",
-    email: "priyank@acme.com",
-    role: "Admin",
-    status: "active",
-    joined: "Jan 12, 2024",
-    lastSeen: "Just now",
-  },
-  {
-    id: "2",
-    name: "Anya Kapoor",
-    email: "anya@acme.com",
-    role: "Editor",
-    status: "active",
-    joined: "Feb 3, 2024",
-    lastSeen: "2 hr ago",
-  },
-  {
-    id: "3",
-    name: "Rohan Sharma",
-    email: "rohan@acme.com",
-    role: "Viewer",
-    status: "active",
-    joined: "Mar 8, 2024",
-    lastSeen: "1 day ago",
-  },
-  {
-    id: "4",
-    name: "Meera Joshi",
-    email: "meera@acme.com",
-    role: "Editor",
-    status: "inactive",
-    joined: "Apr 1, 2024",
-    lastSeen: "3 days ago",
-  },
-  {
-    id: "5",
-    name: "Siddharth R.",
-    email: "sid@acme.com",
-    role: "Viewer",
-    status: "active",
-    joined: "Apr 15, 2024",
-    lastSeen: "5 hr ago",
-  },
-  {
-    id: "6",
-    name: "Kavya Nair",
-    email: "kavya@acme.com",
-    role: "Admin",
-    status: "active",
-    joined: "May 2, 2024",
-    lastSeen: "30 min ago",
-  },
-  {
-    id: "7",
-    name: "Arjun Mehta",
-    email: "arjun@acme.com",
-    role: "Viewer",
-    status: "pending",
-    joined: "May 20, 2024",
-    lastSeen: "Never",
-  },
-];
+const ROLES = ["Admin", "Editor", "Viewer", "Employee", "Manager"]; // Expanded to catch your seed data
 
 const AVATAR_COLORS = [
   "rgba(99,102,241,0.15)",
@@ -98,13 +34,8 @@ const AVATAR_TEXT = [
   "var(--color-danger)",
 ];
 
-function UserAvatar({ name, index }: { name: string; index: number }) {
-  const initials = name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+function UserAvatar({ email, index }: { email: string; index: number }) {
+  const initials = email ? email.substring(0, 2).toUpperCase() : "US";
   return (
     <div
       className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
@@ -119,21 +50,6 @@ function UserAvatar({ name, index }: { name: string; index: number }) {
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    active: "badge-success",
-    inactive: "badge-danger",
-    pending: "badge-warning",
-  };
-  return (
-    <span
-      className={`${map[status] ?? "badge-info"} text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize`}
-    >
-      {status}
-    </span>
-  );
-}
-
 function RoleDropdown({
   value,
   onChange,
@@ -143,11 +59,16 @@ function RoleDropdown({
 }) {
   const [open, setOpen] = useState(false);
   const color =
-    {
-      Admin: "var(--color-primary)",
-      Editor: "var(--color-accent-secondary)",
-      Viewer: "var(--color-text-tertiary)",
-    }[value] ?? "var(--color-text-tertiary)";
+    (
+      {
+        Admin: "var(--color-primary)",
+        Manager: "var(--color-accent)",
+        Employee: "var(--color-success)",
+        Editor: "var(--color-accent-secondary)",
+        Viewer: "var(--color-text-tertiary)",
+      } as Record<string, string>
+    )[value] ?? "var(--color-text-tertiary)";
+
   return (
     <div className="relative">
       <button
@@ -197,24 +118,70 @@ function RoleDropdown({
 }
 
 export default function UsersManagementPage() {
-  const [users, setUsers] = useState(INITIAL_USERS);
+  const { data: serverUsers, isLoading } = getAllUsers() as {
+    data: UserWithRole[] | undefined;
+    isLoading: boolean;
+  };
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState<string | null>(null);
+  const [localRoles, setLocalRoles] = useState<Record<string, string>>({});
+
+  if (isLoading) {
+    return (
+      <div className="mesh-bg min-h-full p-6 space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl btn-gradient flex items-center justify-center">
+              <Users className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1
+                className="text-xl font-bold tracking-tight"
+                style={{ color: "var(--color-text-primary)" }}
+              >
+                User Management
+              </h1>
+              <p
+                className="text-xs mt-0.5"
+                style={{ color: "var(--color-text-tertiary)" }}
+              >
+                Total users: Loading...
+              </p>
+            </div>
+          </div>
+          <button className="btn-gradient px-4 py-2.5 text-sm rounded-xl flex items-center gap-2 self-start sm:self-auto">
+            <Plus className="w-4 h-4" /> Add User
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // 2. Extract the string name safely from the `role` object relationship here
+  const users =
+    serverUsers?.map((u) => {
+      const defaultRoleName = u.role?.name || "Viewer";
+      return {
+        ...u,
+        roleName: localRoles[u.id] ?? defaultRoleName,
+      };
+    }) || [];
 
   const filtered = users.filter((u) => {
     const matchSearch =
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase());
-    const matchRole = filterRole ? u.role === filterRole : true;
+      u.email?.toLowerCase().includes(search.toLowerCase()) ?? false;
+    const matchRole = filterRole ? u.roleName === filterRole : true;
     return matchSearch && matchRole;
   });
 
-  const changeRole = (id: string, role: string) => {
-    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
+  const changeRole = (id: string, roleName: string) => {
+    setLocalRoles((prev) => ({ ...prev, [id]: roleName }));
   };
-
-  const activeCount = users.filter((u) => u.status === "active").length;
-  const pendingCount = users.filter((u) => u.status === "pending").length;
 
   return (
     <div className="mesh-bg min-h-full p-6 space-y-6">
@@ -240,25 +207,7 @@ export default function UsersManagementPage() {
               className="text-xs mt-0.5"
               style={{ color: "var(--color-text-tertiary)" }}
             >
-              <span
-                className="font-semibold"
-                style={{ color: "var(--color-success)" }}
-              >
-                {activeCount} active
-              </span>
-              {pendingCount > 0 && (
-                <>
-                  {" "}
-                  ·{" "}
-                  <span
-                    className="font-semibold"
-                    style={{ color: "var(--color-warning)" }}
-                  >
-                    {pendingCount} pending
-                  </span>
-                </>
-              )}{" "}
-              · {users.length} total
+              Total users: {users.length}
             </p>
           </div>
         </div>
@@ -288,7 +237,7 @@ export default function UsersManagementPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search users…"
+              placeholder="Search by email…"
               className="input-premium w-full pl-9 pr-4 py-2 text-sm"
               style={{ color: "var(--color-text-primary)" }}
             />
@@ -330,14 +279,7 @@ export default function UsersManagementPage() {
           <table className="w-full text-left">
             <thead>
               <tr style={{ background: "var(--color-bg-secondary)" }}>
-                {[
-                  "User",
-                  "Role",
-                  "Status",
-                  "Joined",
-                  "Last Seen",
-                  "Actions",
-                ].map((h) => (
+                {["User Email", "Role", "Joined", "Actions"].map((h) => (
                   <th
                     key={h}
                     className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap"
@@ -366,38 +308,26 @@ export default function UsersManagementPage() {
                       (e.currentTarget.style.background = "transparent")
                     }
                   >
-                    {/* User */}
+                    {/* User Email */}
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <UserAvatar name={u.name} index={i} />
-                        <div>
-                          <p
-                            className="text-sm font-semibold"
-                            style={{ color: "var(--color-text-primary)" }}
-                          >
-                            {u.name}
-                          </p>
-                          <p
-                            className="text-[11px]"
-                            style={{ color: "var(--color-text-tertiary)" }}
-                          >
-                            {u.email}
-                          </p>
-                        </div>
+                        <UserAvatar email={u.email} index={i} />
+                        <p
+                          className="text-sm font-semibold"
+                          style={{ color: "var(--color-text-primary)" }}
+                        >
+                          {u.email}
+                        </p>
                       </div>
                     </td>
 
                     {/* Role */}
                     <td className="px-5 py-3.5">
+                      {/* 3. Pass the clean string 'roleName' here instead of object */}
                       <RoleDropdown
-                        value={u.role}
+                        value={u.roleName}
                         onChange={(r) => changeRole(u.id, r)}
                       />
-                    </td>
-
-                    {/* Status */}
-                    <td className="px-5 py-3.5">
-                      <StatusBadge status={u.status} />
                     </td>
 
                     {/* Joined */}
@@ -405,15 +335,8 @@ export default function UsersManagementPage() {
                       className="px-5 py-3.5 text-xs whitespace-nowrap"
                       style={{ color: "var(--color-text-secondary)" }}
                     >
-                      {u.joined}
-                    </td>
-
-                    {/* Last seen */}
-                    <td
-                      className="px-5 py-3.5 text-xs whitespace-nowrap"
-                      style={{ color: "var(--color-text-tertiary)" }}
-                    >
-                      {u.lastSeen}
+                      {u.joined ||
+                        new Date(u.role?.created_at).toLocaleDateString()}
                     </td>
 
                     {/* Actions */}

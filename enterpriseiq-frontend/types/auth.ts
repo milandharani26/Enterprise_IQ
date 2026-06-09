@@ -2,7 +2,28 @@
 export interface User {
   id: string;
   email: string;
-  name?: string; // Optional — backend JWT carries sub + email only
+  role?: string; // Optional — backend JWT carries sub + email only
+}
+
+// Full Database Role relation object payload
+export interface DbRole {
+  id: string;
+  name: string;
+  role_code: string;
+  assistant_ids: string[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Complete User object layout including DB joins (Used in management / profiles)
+export interface UserWithRole {
+  id: string;
+  email: string;
+  password?: string;
+  hashedRefreshToken?: string;
+  role: DbRole; // Complete nested relations mapping
+  role_id: string;
+  joined?: string;
 }
 
 export interface LoginCredentials {
