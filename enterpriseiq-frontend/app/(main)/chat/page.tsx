@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useWorkspace } from "@/app/(main)/layout";
 import { Send, Plus, Sparkles, PanelLeftOpen } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useAuthStore } from "@/store/useAuthStore";
 import apiClient from "@/lib/axios";
+import { useAuthStore } from "@/store/useAuthStore";
 
 interface Message {
   id: string;
@@ -37,7 +37,7 @@ export default function ChatPage() {
     queryKey: ["me"],
     queryFn: async () => {
       const res = await apiClient.get("/users/me");
-      return res.data?.data || res.data;
+      return res.data;
     },
     enabled: !user,
   });

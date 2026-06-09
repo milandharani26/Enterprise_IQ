@@ -12,10 +12,10 @@
   },
   "lint-staged": {
     "backend/**/*.ts": [
-      "prettier --write"
+      "npx prettier --write"
     ],
     "enterpriseiq-frontend/**/*.{ts,tsx}": [
-      "prettier --write"
+      "npx prettier --write"
     ]
   }
 }

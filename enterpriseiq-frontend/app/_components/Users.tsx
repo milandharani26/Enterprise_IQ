@@ -12,6 +12,7 @@ import {
   Loader2,
   X,
   UserCheck,
+  Check,
 } from "lucide-react";
 import { getAllUsers } from "@/hooks/queries/useUserQueries";
 import { getAllRoles } from "@/hooks/queries/useRoleQueries";
@@ -88,7 +89,7 @@ function RoleDropdown({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center justify-between w-full text-xs font-semibold px-3 py-2 rounded-xl transition-colors"
+        className="flex items-center justify-between w-full text-sm font-semibold px-4 py-3 rounded-xl transition-all outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
         style={{
           background: "var(--color-bg-secondary)",
           color,
@@ -96,36 +97,48 @@ function RoleDropdown({
         }}
       >
         <span>{value}</span>
-        <ChevronDown className="w-4 h-4 opacity-70" />
+        <ChevronDown
+          className={`w-4 h-4 opacity-70 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
       </button>
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            className="absolute top-full mt-1 left-0 w-full glass-card z-50 py-1 max-h-[160px] overflow-y-auto shadow-xl"
-            style={{ borderRadius: "var(--radius-md)" }}
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-full mt-2 left-0 w-full glass-card z-[100] py-1.5 max-h-[220px] overflow-y-auto shadow-2xl border"
+            style={{
+              borderRadius: "var(--radius-md)",
+              borderColor: "var(--color-border-primary)",
+              background: "var(--color-bg-elevated)",
+            }}
           >
-            {roles.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => {
-                  onChange(r.name);
-                  setOpen(false);
-                }}
-                className="w-full text-left px-3 py-2 text-xs font-medium transition-colors hover:bg-current/5"
-                style={{
-                  color:
-                    r.name === value
+            {roles.map((r) => {
+              const isSelected = r.name === value;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(r.name);
+                    setOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-sm font-medium transition-all hover:bg-current/10 flex items-center justify-between"
+                  style={{
+                    color: isSelected
                       ? "var(--color-primary)"
-                      : "var(--color-text-secondary)",
-                }}
-              >
-                {r.name}
-              </button>
-            ))}
+                      : "var(--color-text-primary)",
+                  }}
+                >
+                  <span className="flex items-center gap-2">{r.name}</span>
+                  {isSelected && <Check className="w-4 h-4" />}
+                </button>
+              );
+            })}
           </motion.div>
         )}
       </AnimatePresence>
@@ -547,7 +560,7 @@ export default function UsersManagementPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ type: "spring", duration: 0.4 }}
-              className="glass-card w-full max-w-md overflow-hidden relative shadow-2xl z-10 border p-6 flex flex-col gap-5"
+              className="glass-card w-full max-w-md relative shadow-2xl z-10 border p-6 flex flex-col gap-5"
               style={{
                 background: "var(--color-bg-elevated)",
                 borderColor: "var(--color-border-primary)",
