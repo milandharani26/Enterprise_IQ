@@ -13,17 +13,20 @@ import { AuthService } from './auth.service';
 import { AuthDto } from './dto/auth.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Public()
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth() {
     // Guard redirects to google
   }
 
+  @Public()
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req: Request, @Res() res: Response) {
@@ -34,6 +37,23 @@ export class AuthController {
     res.redirect('http://localhost:3000'); // Redirect to frontend/home
   }
 
+  @Public()
+  @UseGuards(AuthGuard('jwt-refresh'))
+  @Get('refresh')
+  async refreshTokens(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const user = req.user as { id: string; refreshToken: string };
+    const tokens = await this.authService.refreshTokens(
+      user.id,
+      user.refreshToken,
+    );
+    this.setTokensInCookies(res, tokens);
+    return { success: true, message: 'Tokens refreshed successfully' };
+  }
+
+  @Public()
   @Post('signup')
   async signup(
     @Body() authDto: AuthDto,
@@ -41,9 +61,10 @@ export class AuthController {
   ) {
     const tokens = await this.authService.signUp(authDto);
     this.setTokensInCookies(res, tokens);
-    return tokens;
+    return { success: true, message: 'Signed up successfully' };
   }
 
+  @Public()
   @Post('signin')
   async signin(
     @Body() authDto: AuthDto,
@@ -51,14 +72,16 @@ export class AuthController {
   ) {
     const tokens = await this.authService.signIn(authDto);
     this.setTokensInCookies(res, tokens);
-    return tokens;
+    return { success: true, message: 'Signed in successfully' };
   }
 
+  @Public()
   @Post('forgot-password')
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     return this.authService.forgotPassword(forgotPasswordDto.email);
   }
 
+  @Public()
   @Post('reset-password')
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(

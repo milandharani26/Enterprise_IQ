@@ -26,6 +26,12 @@ export class UsersService {
     return this.usersRepository.save(newUser);
   }
 
+  findAll(): Promise<User[]> {
+    return this.usersRepository.find({
+      relations: { role: true },
+    });
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOne({
       where: { email },
