@@ -155,6 +155,10 @@ export class AuthService {
     await this.usersService.update(userId, { hashedRefreshToken });
   }
 
+  async logout(userId: string) {
+    await this.usersService.update(userId, { hashedRefreshToken: null });
+  }
+
   hashData(data: string) {
     return bcrypt.hash(data, 10);
   }

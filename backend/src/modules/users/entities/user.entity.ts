@@ -19,7 +19,7 @@ export class User {
   password?: string;
 
   @Column({ nullable: true })
-  hashedRefreshToken?: string;
+  hashedRefreshToken?: string | null;
 
   @ManyToOne(() => Role, (role) => role.users)
   @JoinColumn({ name: 'role_id' })

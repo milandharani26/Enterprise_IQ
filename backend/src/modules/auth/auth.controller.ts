@@ -132,6 +132,23 @@ export class AuthController {
     );
   }
 
+  @Post('logout')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Log out user' })
+  @ApiResponse({ status: 200, description: 'User successfully logged out.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const user = req.user as { id?: string; sub?: string };
+    const userId = user?.id || user?.sub;
+    if (userId) {
+      await this.authService.logout(userId);
+    }
+
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+    return { success: true, message: 'Logged out successfully' };
+  }
+
   private setTokensInCookies(
     res: Response,
     tokens: { accessToken: string; refreshToken: string },
