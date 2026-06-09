@@ -9,7 +9,7 @@ import { UsersService } from '../users/users.service';
 import { AuthDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { MailService } from '../assistants/mail/mail.service';
+import { MailService } from '../mail/mail.service';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 @Injectable()
