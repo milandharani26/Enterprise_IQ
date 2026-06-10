@@ -5,6 +5,8 @@ import { useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { useWorkspace } from "../(main)/layout";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useAllConversations } from "@/hooks/queries/useConversationQueries";
+import { useConversationMutations } from "@/hooks/mutations/useConversationMutation";
 import {
   Plus,
   PanelLeftClose,
@@ -12,70 +14,9 @@ import {
   LayoutDashboardIcon,
   ShieldCheckIcon,
   UsersIcon,
+  MessageSquareIcon,
+  Trash2,
 } from "lucide-react";
-
-// ── Shared Component Framework Interfaces ─────────────────────────────────────
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  ts: Date;
-}
-interface ChatSession {
-  id: string;
-  title: string;
-  ts: Date;
-  messages: Message[];
-}
-
-const FAKE_HISTORY: ChatSession[] = [
-  {
-    id: "1",
-    title: "How to set up SSO with Okta",
-    ts: new Date(Date.now() - 1000 * 60 * 30),
-    messages: [],
-  },
-  {
-    id: "2",
-    title: "Explain rate limiting strategies",
-    ts: new Date(Date.now() - 1000 * 60 * 60 * 3),
-    messages: [],
-  },
-  {
-    id: "3",
-    title: "Debug Prisma N+1 query issue",
-    ts: new Date(Date.now() - 1000 * 60 * 60 * 26),
-    messages: [],
-  },
-  {
-    id: "4",
-    title: "Next.js app router vs pages",
-    ts: new Date(Date.now() - 1000 * 60 * 60 * 50),
-    messages: [],
-  },
-  {
-    id: "5",
-    title: "Docker multi-stage build setup",
-    ts: new Date(Date.now() - 1000 * 60 * 60 * 72),
-    messages: [],
-  },
-];
-
-function groupByDate(sessions: ChatSession[]) {
-  const today: ChatSession[] = [],
-    yesterday: ChatSession[] = [],
-    older: ChatSession[] = [];
-  const now = new Date();
-  const yest = new Date(now);
-  yest.setDate(yest.getDate() - 1);
-  sessions.forEach((s) => {
-    const d = new Date(s.ts);
-    if (d.toDateString() === now.toDateString()) today.push(s);
-    else if (d.toDateString() === yest.toDateString()) yesterday.push(s);
-    else older.push(s);
-  });
-  return { today, yesterday, older };
-}
 
 export function Avatar({ name, size = 7 }: { name: string; size?: number }) {
   const initials = name
@@ -103,7 +44,8 @@ export function Avatar({ name, size = 7 }: { name: string; size?: number }) {
 export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { sidebarOpen, setSidebarOpen, setActiveChat } = useWorkspace();
+  const { sidebarOpen, setSidebarOpen, activeChat, setActiveChat } =
+    useWorkspace();
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -111,8 +53,14 @@ export default function Sidebar() {
   const emailPrefix = storeUser?.email ? storeUser.email.split("@")[0] : "User";
   const user = { name: emailPrefix, email: storeUser?.email || "" };
 
-  const grouped = groupByDate(sessions);
-  const user = { name: "Priyank Godhani", email: "priyank@acme.com" };
+  // Fetch paginated conversation histories using your React Query layer
+  const { data: conversationsData, isLoading } = useAllConversations({
+    page: 1,
+    limit: 30,
+  });
+
+  // Pull delete mutation controller from your hook layer
+  const { deleteConversation, isDeleting } = useConversationMutations();
 
   const menuItems = [
     { label: "Dashboard", path: "/dashboard", icon: LayoutDashboardIcon },
@@ -129,20 +77,48 @@ export default function Sidebar() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Handle route click adjustments for mobile screens
   const handleNavigation = (path: string) => {
     router.push(path);
-    // Automatically slide sidebar shut after selecting a route on mobile viewports
     if (window.innerWidth < 1024) {
       setSidebarOpen(false);
     }
   };
 
-  // Responsive Framer Motion Animation Settings
+  const selectConversation = (id: string) => {
+    setActiveChat(id);
+    handleNavigation("/chat");
+  };
+
+  const handleNewChatInit = () => {
+    setActiveChat(null); // Clear context selection state to indicate brand new canvas
+    handleNavigation("/chat");
+  };
+
+  // Intercept selection triggers and run background database cache invalidation
+  const handleDeleteChatClick = async (
+    e: React.MouseEvent,
+    conversationId: string,
+  ) => {
+    e.stopPropagation(); // Stop navigation click handler from firing
+    if (isDeleting) return;
+
+    try {
+      await deleteConversation(conversationId);
+      // Reset workspace hook node if user deleted the active room instance
+      if (activeChat === conversationId) {
+        setActiveChat(null);
+      }
+    } catch (err) {
+      console.error(
+        "Failed to cleanly delete conversation target resource:",
+        err,
+      );
+    }
+  };
+
   const sidebarVariants = {
     open: { width: 260, opacity: 1 },
     collapsed: {
-      // Dynamic fallback check: If screen viewport width is desktop, fall back to mini-rail width, else hide fully
       width:
         typeof window !== "undefined" && window.innerWidth >= 1024 ? 68 : 0,
       opacity:
@@ -155,7 +131,7 @@ export default function Sidebar() {
       variants={sidebarVariants}
       animate={sidebarOpen ? "open" : "collapsed"}
       transition={{ duration: 0.22, ease: "easeInOut" }}
-      className={`fixed inset-y-0 left-0 lg:relative flex flex-col shrink-0 overflow-hidden h-full z-50 shadow-2xl lg:shadow-none`}
+      className="fixed inset-y-0 left-0 lg:relative flex flex-col shrink-0 overflow-hidden h-full z-50 shadow-2xl lg:shadow-none"
       style={{
         background: "var(--auth-panel-left)",
         borderRight: "1px solid var(--auth-edge-line)",
@@ -202,7 +178,6 @@ export default function Sidebar() {
             </button>
           </>
         ) : (
-          /* Desktop layout expansion button toggle */
           <button
             onClick={() => setSidebarOpen(true)}
             className="hidden lg:block mx-auto p-1.5 rounded-md transition-colors hover:opacity-70"
@@ -215,13 +190,11 @@ export default function Sidebar() {
 
       {/* CORE ROUTING NAVIGATION BUTTONS */}
       <div className="px-3 pt-4 space-y-2 flex-1 overflow-y-auto overflow-x-hidden scrollbar-none">
-        {/* Action: Setup New Chat Instance */}
         <button
-          onClick={() => {
-            setActiveChat(null);
-            handleNavigation("/chat");
-          }}
-          className={`w-full flex items-center rounded-lg transition-all duration-150 active:scale-[0.98] ${sidebarOpen ? "px-3 py-2 gap-2 text-sm" : "p-2.5 justify-center"}`}
+          onClick={handleNewChatInit}
+          className={`w-full flex items-center rounded-lg transition-all duration-150 active:scale-[0.98] ${
+            sidebarOpen ? "px-3 py-2 gap-2 text-sm" : "p-2.5 justify-center"
+          }`}
           style={{
             background: "var(--brand-10)",
             border: "1px solid var(--brand-20)",
@@ -235,7 +208,78 @@ export default function Sidebar() {
           )}
         </button>
 
-        <div className="space-y-1.5 pt-2">
+        {/* RECENT CONVERSATIONS SUB-LIST */}
+        <div
+          className="space-y-1 pt-2"
+          style={{ borderTop: "1px solid var(--auth-edge-line)" }}
+        >
+          {sidebarOpen && (
+            <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground opacity-60 mb-1">
+              Recent Chats
+            </p>
+          )}
+
+          {isLoading
+            ? sidebarOpen && (
+                <p className="px-3 text-xs text-muted-foreground animate-pulse">
+                  Loading histories...
+                </p>
+              )
+            : conversationsData?.data?.map((chat) => {
+                const isSelected =
+                  activeChat === chat.id && pathname === "/chat";
+                return (
+                  <div
+                    key={chat.id}
+                    className="group relative flex items-center w-full"
+                  >
+                    <button
+                      onClick={() => selectConversation(chat.id)}
+                      className={`w-full flex items-center rounded-lg transition-all duration-150 ${
+                        sidebarOpen
+                          ? "px-3 py-1.5 pr-8 gap-3 text-xs"
+                          : "p-2.5 justify-center"
+                      }`}
+                      style={{
+                        background: isSelected
+                          ? "var(--brand-12)"
+                          : "transparent",
+                        color: isSelected
+                          ? "var(--brand-light)"
+                          : "var(--auth-subtext)",
+                      }}
+                      title={chat.title}
+                    >
+                      <MessageSquareIcon
+                        className={`w-3.5 h-3.5 shrink-0 ${isSelected ? "text-emerald-500" : ""}`}
+                      />
+                      {sidebarOpen && (
+                        <span className="truncate flex-1 text-left">
+                          {chat.title}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* MINIMAL HOVER DELETE OVERLAY CONTROLLER */}
+                    {sidebarOpen && (
+                      <button
+                        onClick={(e) => handleDeleteChatClick(e, chat.id)}
+                        className="absolute right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/10 text-muted-foreground hover:text-red-400 z-10"
+                        title="Delete Conversation"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+        </div>
+
+        {/* MANAGEMENT LINK ITEMS */}
+        <div
+          className="space-y-1.5 pt-4"
+          style={{ borderTop: "1px solid var(--auth-edge-line)" }}
+        >
           {menuItems.map((item) => {
             const IconComponent = item.icon;
             const active = pathname === item.path;
@@ -275,7 +319,9 @@ export default function Sidebar() {
         style={{ borderTop: "1px solid var(--auth-edge-line)" }}
       >
         <div
-          className={`w-full flex items-center rounded-xl ${sidebarOpen ? "px-3 py-2.5 gap-3" : "p-1.5 justify-center"}`}
+          className={`w-full flex items-center rounded-xl ${
+            sidebarOpen ? "px-3 py-2.5 gap-3" : "p-1.5 justify-center"
+          }`}
           style={{
             background: "var(--brand-4)",
             border: "1px solid var(--auth-card-border)",
@@ -286,6 +332,7 @@ export default function Sidebar() {
               .split(" ")
               .map((w) => w[0])
               .join("")
+              .slice(0, 2)
               .toUpperCase()}
           </div>
           {sidebarOpen && (

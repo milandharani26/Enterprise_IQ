@@ -150,15 +150,16 @@ export default function RolesPage() {
   }
 
   const totalAssistantsCount = backendAssistants?.length || 0;
-  const activeCount = selectedRole?.assistant_ids?.length || 0;
-
-  // Handler to toggle an assistant id dynamically within the active role's state array
+  const activeCount = selectedRole?.assistant_ids?.length || 0; // length still works, no change needed
   const handleToggleAssistant = (assistantId: string) => {
     if (!selectedRole) return;
 
     const currentIds = selectedRole.assistant_ids || [];
-    const updatedIds = currentIds.includes(assistantId)
-      ? currentIds.filter((id) => id !== assistantId)
+    const alreadyEnabled = currentIds.some(
+      (a: any) => (a?.id ?? a) === assistantId,
+    );
+    const updatedIds = alreadyEnabled
+      ? currentIds.filter((a: any) => (a?.id ?? a) !== assistantId)
       : [...currentIds, assistantId];
 
     setSelectedRole({
@@ -391,8 +392,8 @@ export default function RolesPage() {
               <div className="p-6 space-y-2 overflow-y-auto max-h-[calc(100vh-320px)] scrollbar-thin">
                 {backendAssistants && backendAssistants.length > 0 ? (
                   backendAssistants.map((asst) => {
-                    const enabled = !!selectedRole.assistant_ids?.includes(
-                      asst.id,
+                    const enabled = !!(selectedRole.assistant_ids ?? []).some(
+                      (a: any) => (a?.id ?? a) === asst.id,
                     );
                     const isAdmin =
                       selectedRole.role_code?.toLowerCase() === "admin";

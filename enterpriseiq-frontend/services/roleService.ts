@@ -19,4 +19,8 @@ export const roleService = {
     });
     return response.data.message;
   },
+  getRoleWithAssistantById: async (roleId: string) => {
+    const response = await apiClient.get(`/roles/${roleId}/assistants`);
+    return response.data.data;
+  },
 };

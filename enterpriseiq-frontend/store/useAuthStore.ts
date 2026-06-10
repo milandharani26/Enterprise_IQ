@@ -1,26 +1,10 @@
 import { create } from "zustand";
-
-interface UserRole {
-  id: string;
-  name: string;
-  role_code: string;
-  assistant_ids: string[] | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface User {
-  id: string;
-  email: string;
-  name?: string;
-  role?: string;
-  roleId?: string;
-}
+import type { UserWithRole } from "@/types/auth";
 
 interface AuthState {
-  user: User | null;
+  user: UserWithRole | null;
   isAuthenticated: boolean;
-  login: (user: User) => void;
+  login: (user: UserWithRole) => void;
   logout: () => void;
 }
 

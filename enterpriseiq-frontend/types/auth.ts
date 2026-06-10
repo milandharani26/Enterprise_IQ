@@ -2,7 +2,7 @@
 export interface User {
   id: string;
   email: string;
-  role?: string; // Optional — backend JWT carries sub + email only
+  role?: string;
 }
 
 // Full Database Role relation object payload

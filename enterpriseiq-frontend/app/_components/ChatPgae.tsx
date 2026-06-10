@@ -6,6 +6,7 @@ import { useWorkspace } from "@/app/(main)/layout";
 import { Avatar } from "./Sidebar";
 import { Send, Plus, Sparkles, PanelLeftOpen } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
+import { getRoleWithAssistantById } from "@/hooks/queries/useRoleQueries";
 
 interface Message {
   id: string;
@@ -33,7 +34,7 @@ export default function ChatPage() {
   const { user: storeUser } = useAuthStore();
   const emailPrefix = storeUser?.email ? storeUser.email.split("@")[0] : "User";
   const user = { name: emailPrefix };
-
+  // const {data:assistants}=getRoleWithAssistantById();
   // Dynamic textarea height adjustment
   useEffect(() => {
     if (inputRef.current) {

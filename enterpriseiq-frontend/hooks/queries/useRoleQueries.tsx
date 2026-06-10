@@ -8,3 +8,10 @@ export function getAllRoles() {
     queryFn: roleService.getAllRoles,
   });
 }
+
+export function getRoleWithAssistantById(roleId: string) {
+  return useQuery({
+    queryKey: ["role-assistants", roleId],
+    queryFn: () => roleService.getRoleWithAssistantById(roleId),
+  });
+}
