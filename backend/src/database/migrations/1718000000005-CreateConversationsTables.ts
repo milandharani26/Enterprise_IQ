@@ -115,7 +115,7 @@ export class CreateConversationsTables1718000000005 implements MigrationInterfac
       new TableForeignKey({
         columnNames: ['agent_id'],
         referencedColumnNames: ['id'],
-        referencedTableName: 'agents',
+        referencedTableName: 'assistants',
         onDelete: 'SET NULL',
       }),
     ]);

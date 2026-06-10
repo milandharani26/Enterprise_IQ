@@ -57,6 +57,16 @@ export class RolesService {
     return role;
   }
 
+  async findAssistantsByRole(id: string): Promise<Assistant[]> {
+    const role = await this.findOne(id);
+    if (!role.assistant_ids || role.assistant_ids.length === 0) {
+      return [];
+    }
+    return this.assistantsRepository.find({
+      where: { id: In(role.assistant_ids) },
+    });
+  }
+
   async update(id: string, updateRoleDto: UpdateRoleDto): Promise<Role> {
     const role = await this.findOne(id);
     Object.assign(role, updateRoleDto);

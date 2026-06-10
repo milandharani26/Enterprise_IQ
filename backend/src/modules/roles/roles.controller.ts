@@ -51,6 +51,16 @@ export class RolesController {
     return this.rolesService.findOne(id);
   }
 
+  @Get(':id/assistants')
+  @ApiOperation({ summary: 'Get assistants for a role' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiResponse({ status: 200, description: 'Return assistants for the role.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 404, description: 'Role not found.' })
+  findAssistantsByRole(@Param('id') id: string) {
+    return this.rolesService.findAssistantsByRole(id);
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Update a role' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })

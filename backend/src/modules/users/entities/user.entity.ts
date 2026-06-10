@@ -18,7 +18,7 @@ export class User {
   @Column({ nullable: true })
   password?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   hashedRefreshToken?: string | null;
 
   @ManyToOne(() => Role, (role) => role.users)
