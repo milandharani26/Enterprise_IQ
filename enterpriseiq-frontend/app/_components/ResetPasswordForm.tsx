@@ -2,19 +2,18 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useRouter, useSearchParams } from "next/navigation";
-import { authService } from "@/services/authService";
+import { useSearchParams } from "next/navigation";
+import { useResetPasswordMutation } from "@/hooks/mutations/useAuthMutation";
 import { useState, useEffect, Suspense } from "react";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
 function ResetPasswordFormContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
-  const [isPending, setIsPending] = useState(false);
+  const { mutate, isPending } = useResetPasswordMutation();
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -57,16 +56,7 @@ function ResetPasswordFormContent() {
       return;
     }
 
-    try {
-      setIsPending(true);
-      const res = await authService.resetPassword(token, password);
-      toast.success(res.message || "Password updated successfully");
-      router.push("/sign-in");
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to reset password");
-    } finally {
-      setIsPending(false);
-    }
+    mutate({ token, newPassword: password });
   };
 
   const wrap = {

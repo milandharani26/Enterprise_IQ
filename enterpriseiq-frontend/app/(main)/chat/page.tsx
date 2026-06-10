@@ -33,8 +33,6 @@ export default function ChatPage() {
 
   const { user, login } = useAuthStore();
 
-  console.log("user", user);
-
   const { data: meData, isSuccess: isMeSuccess } = useQuery({
     queryKey: ["me"],
     queryFn: async () => {

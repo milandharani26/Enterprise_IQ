@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { authService } from "@/services/authService";
+import { useForgotPasswordMutation } from "@/hooks/mutations/useAuthMutation";
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,7 +12,7 @@ import { Mail, ArrowRight, ArrowLeft } from "lucide-react";
 
 export function ForgotPasswordForm() {
   const router = useRouter();
-  const [isPending, setIsPending] = useState(false);
+  const { mutate, isPending } = useForgotPasswordMutation();
   const [emailError, setEmailError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -45,18 +45,12 @@ export function ForgotPasswordForm() {
       return;
     }
 
-    try {
-      setIsPending(true);
-      const res = await authService.forgotPassword(email);
-      setSuccessMessage(res.message);
-      toast.success(res.message);
-    } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Failed to send reset email",
-      );
-    } finally {
-      setIsPending(false);
-    }
+    mutate(email, {
+      onSuccess: (data) => {
+        setSuccessMessage(data.message);
+        toast.success(data.message);
+      },
+    });
   };
 
   const wrap = {
