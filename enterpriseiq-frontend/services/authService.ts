@@ -47,4 +47,31 @@ export const authService = {
       window.location.href = `${BACKEND_URL}/auth/google`;
     }
   },
+
+  /**
+   * Request a password reset email.
+   * Backend: POST /auth/forgot-password
+   */
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      "/auth/forgot-password",
+      { email },
+    );
+    return response.data;
+  },
+
+  /**
+   * Reset password with token.
+   * Backend: POST /auth/reset-password
+   */
+  resetPassword: async (
+    token: string,
+    newPassword: string,
+  ): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      "/auth/reset-password",
+      { token, newPassword },
+    );
+    return response.data;
+  },
 };
