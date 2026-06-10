@@ -8,14 +8,14 @@
   "devDependencies": {
     "husky": "^9.0.0",
     "lint-staged": "^16.0.0",
-    "prettier": "^3.8.3"
+    "prettier": "^3.8.4"
   },
   "lint-staged": {
     "backend/**/*.ts": [
-      "prettier --write"
+      "npx prettier --write"
     ],
     "enterpriseiq-frontend/**/*.{ts,tsx}": [
-      "prettier --write"
+      "npx prettier --write"
     ]
   }
 }

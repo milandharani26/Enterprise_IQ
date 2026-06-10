@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { useWorkspace } from "../(main)/layout";
+import { useAuthStore } from "@/store/useAuthStore";
 import {
   Plus,
   PanelLeftClose,
@@ -13,6 +14,92 @@ import {
   UsersIcon,
 } from "lucide-react";
 
+// ── Shared Component Framework Interfaces ─────────────────────────────────────
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  ts: Date;
+}
+interface ChatSession {
+  id: string;
+  title: string;
+  ts: Date;
+  messages: Message[];
+}
+
+const FAKE_HISTORY: ChatSession[] = [
+  {
+    id: "1",
+    title: "How to set up SSO with Okta",
+    ts: new Date(Date.now() - 1000 * 60 * 30),
+    messages: [],
+  },
+  {
+    id: "2",
+    title: "Explain rate limiting strategies",
+    ts: new Date(Date.now() - 1000 * 60 * 60 * 3),
+    messages: [],
+  },
+  {
+    id: "3",
+    title: "Debug Prisma N+1 query issue",
+    ts: new Date(Date.now() - 1000 * 60 * 60 * 26),
+    messages: [],
+  },
+  {
+    id: "4",
+    title: "Next.js app router vs pages",
+    ts: new Date(Date.now() - 1000 * 60 * 60 * 50),
+    messages: [],
+  },
+  {
+    id: "5",
+    title: "Docker multi-stage build setup",
+    ts: new Date(Date.now() - 1000 * 60 * 60 * 72),
+    messages: [],
+  },
+];
+
+function groupByDate(sessions: ChatSession[]) {
+  const today: ChatSession[] = [],
+    yesterday: ChatSession[] = [],
+    older: ChatSession[] = [];
+  const now = new Date();
+  const yest = new Date(now);
+  yest.setDate(yest.getDate() - 1);
+  sessions.forEach((s) => {
+    const d = new Date(s.ts);
+    if (d.toDateString() === now.toDateString()) today.push(s);
+    else if (d.toDateString() === yest.toDateString()) yesterday.push(s);
+    else older.push(s);
+  });
+  return { today, yesterday, older };
+}
+
+export function Avatar({ name, size = 7 }: { name: string; size?: number }) {
+  const initials = name
+    ? name
+        .split(" ")
+        .map((w) => w[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "";
+  return (
+    <div
+      className={`w-${size} h-${size} rounded-full flex items-center justify-center text-[11px] font-bold shrink-0`}
+      style={{
+        background: "var(--brand-15)",
+        border: "1px solid var(--brand-25)",
+        color: "var(--brand-light)",
+      }}
+    >
+      {initials}
+    </div>
+  );
+}
+
 export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
@@ -20,6 +107,11 @@ export default function Sidebar() {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
+  const { user: storeUser } = useAuthStore();
+  const emailPrefix = storeUser?.email ? storeUser.email.split("@")[0] : "User";
+  const user = { name: emailPrefix, email: storeUser?.email || "" };
+
+  const grouped = groupByDate(sessions);
   const user = { name: "Priyank Godhani", email: "priyank@acme.com" };
 
   const menuItems = [

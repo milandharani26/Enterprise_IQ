@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useWorkspace } from "@/app/(main)/layout";
 import { Avatar } from "./Sidebar";
 import { Send, Plus, Sparkles, PanelLeftOpen } from "lucide-react";
+import { useAuthStore } from "@/store/useAuthStore";
 
 interface Message {
   id: string;
@@ -28,7 +29,10 @@ export default function ChatPage() {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const user = { name: "Priyank Godhani" };
+
+  const { user: storeUser } = useAuthStore();
+  const emailPrefix = storeUser?.email ? storeUser.email.split("@")[0] : "User";
+  const user = { name: emailPrefix };
 
   // Dynamic textarea height adjustment
   useEffect(() => {
