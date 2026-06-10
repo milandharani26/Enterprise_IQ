@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { authService } from "@/services/authService";
 import { useRouter } from "next/navigation";
@@ -77,6 +77,20 @@ export function useRegisterMutation() {
       toast.error(
         extractErrorMessage(error, "Registration failed. Please try again."),
       );
+    },
+  });
+}
+
+export function useLogout() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: authService.logout,
+    onSuccess: () => {
+      // 1. Invalidate the management list query cache pool
+      queryClient.invalidateQueries({ queryKey: ["all-users"] });
+
+      // 2. Invalidate the active session profiles state pool
+      queryClient.invalidateQueries({ queryKey: ["me"] });
     },
   });
 }

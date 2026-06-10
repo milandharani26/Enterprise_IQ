@@ -2,11 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useWorkspace } from "../(main)/layout";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAllConversations } from "@/hooks/queries/useConversationQueries";
 import { useConversationMutations } from "@/hooks/mutations/useConversationMutation";
+import { LogOut, Loader2, ChevronDown } from "lucide-react";
+import { useLogout } from "@/hooks/mutations/useAuthMutation";
 import {
   Plus,
   PanelLeftClose,
@@ -50,6 +52,7 @@ export default function Sidebar() {
   const profileRef = useRef<HTMLDivElement>(null);
 
   const { user: storeUser } = useAuthStore();
+  const { mutate: logout, isPending: isLoggingOut } = useLogout();
   const emailPrefix = storeUser?.email ? storeUser.email.split("@")[0] : "User";
   const user = { name: emailPrefix, email: storeUser?.email || "" };
 
@@ -313,18 +316,77 @@ export default function Sidebar() {
       </div>
 
       {/* ACCOUNT FOOTER SECTION */}
+      {/* ACCOUNT FOOTER SECTION */}
       <div
         ref={profileRef}
         className="relative shrink-0 px-3 py-3"
         style={{ borderTop: "1px solid var(--auth-edge-line)" }}
       >
-        <div
-          className={`w-full flex items-center rounded-xl ${
+        {/* LOGOUT POPOVER — renders above the avatar button */}
+        <AnimatePresence>
+          {profileOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 6, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 6, scale: 0.96 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute bottom-full left-3 right-3 mb-2 rounded-xl overflow-hidden z-50"
+              style={{
+                background: "var(--auth-panel-left)",
+                border: "1px solid var(--auth-edge-line)",
+                boxShadow: "0 -4px 24px rgba(0,0,0,0.35)",
+              }}
+            >
+              {/* User info row inside popover */}
+              <div
+                className="px-4 py-3 border-b"
+                style={{ borderColor: "var(--auth-edge-line)" }}
+              >
+                <p
+                  className="text-xs font-semibold truncate"
+                  style={{ color: "var(--auth-heading)" }}
+                >
+                  {user.name}
+                </p>
+                <p
+                  className="text-[10px] truncate mt-0.5"
+                  style={{ color: "var(--auth-label)" }}
+                >
+                  {user.email}
+                </p>
+              </div>
+
+              {/* Sign out button */}
+              <button
+                onClick={async () => {
+                  setProfileOpen(false);
+                  await logout();
+                  router.push("/sign-in");
+                }}
+                disabled={isLoggingOut}
+                className="w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium transition-opacity hover:opacity-70 disabled:opacity-40"
+                style={{ color: "var(--color-danger, #ef4444)" }}
+              >
+                {isLoggingOut ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <LogOut className="w-3.5 h-3.5" />
+                )}
+                {isLoggingOut ? "Signing out..." : "Sign out"}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* AVATAR TRIGGER BUTTON */}
+        <button
+          onClick={() => setProfileOpen(!profileOpen)}
+          className={`w-full flex items-center rounded-xl transition-opacity hover:opacity-80 ${
             sidebarOpen ? "px-3 py-2.5 gap-3" : "p-1.5 justify-center"
           }`}
           style={{
             background: "var(--brand-4)",
-            border: "1px solid var(--auth-card-border)",
+            border: `1px solid ${profileOpen ? "var(--brand-25)" : "var(--auth-card-border)"}`,
           }}
         >
           <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 bg-emerald-600 text-white">
@@ -336,22 +398,34 @@ export default function Sidebar() {
               .toUpperCase()}
           </div>
           {sidebarOpen && (
-            <div className="flex-1 text-left overflow-hidden">
-              <p
-                className="text-xs font-semibold truncate"
-                style={{ color: "var(--auth-heading)" }}
+            <>
+              <div className="flex-1 text-left overflow-hidden">
+                <p
+                  className="text-xs font-semibold truncate"
+                  style={{ color: "var(--auth-heading)" }}
+                >
+                  {user.name}
+                </p>
+                <p
+                  className="text-[10px] truncate"
+                  style={{ color: "var(--auth-label)" }}
+                >
+                  {user.email}
+                </p>
+              </div>
+              <motion.div
+                animate={{ rotate: profileOpen ? 180 : 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="shrink-0"
               >
-                {user.name}
-              </p>
-              <p
-                className="text-[10px] truncate"
-                style={{ color: "var(--auth-label)" }}
-              >
-                {user.email}
-              </p>
-            </div>
+                <ChevronDown
+                  className="w-3.5 h-3.5"
+                  style={{ color: "var(--auth-subtext)" }}
+                />
+              </motion.div>
+            </>
           )}
-        </div>
+        </button>
       </div>
     </motion.aside>
   );

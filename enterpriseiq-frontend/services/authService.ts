@@ -74,4 +74,14 @@ export const authService = {
     );
     return response.data;
   },
+
+  logout: async () => {
+    try {
+      const response =
+        await apiClient.post<ApiResponse<AuthTokens>>("/auth/logout");
+      return response.data.data;
+    } catch (error) {
+      console.log(error);
+    }
+  },
 };
