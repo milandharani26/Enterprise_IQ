@@ -33,11 +33,13 @@ export default function ChatPage() {
 
   const { user, login } = useAuthStore();
 
+  console.log("user", user);
+
   const { data: meData, isSuccess: isMeSuccess } = useQuery({
     queryKey: ["me"],
     queryFn: async () => {
       const res = await apiClient.get("/users/me");
-      return res.data;
+      return res.data.data;
     },
     enabled: !user,
   });
