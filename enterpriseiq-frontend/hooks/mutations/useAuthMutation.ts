@@ -81,6 +81,35 @@ export function useRegisterMutation() {
   });
 }
 
+export function useForgotPasswordMutation() {
+  return useMutation<{ message: string }, Error, string>({
+    mutationFn: authService.forgotPassword,
+    onError: (error) => {
+      toast.error(extractErrorMessage(error, "Failed to send reset email."));
+    },
+  });
+}
+
+export function useResetPasswordMutation() {
+  const router = useRouter();
+
+  return useMutation<
+    { message: string },
+    Error,
+    { token: string; newPassword: string }
+  >({
+    mutationFn: ({ token, newPassword }) =>
+      authService.resetPassword(token, newPassword),
+    onSuccess: (data) => {
+      toast.success(data.message || "Password updated successfully");
+      router.push("/sign-in");
+    },
+    onError: (error) => {
+      toast.error(extractErrorMessage(error, "Failed to reset password."));
+    },
+  });
+}
+
 export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
