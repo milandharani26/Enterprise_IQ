@@ -26,9 +26,18 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  ``;
+  const messagesScrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const user = { name: "Priyank Godhani" };
 
+  useEffect(() => {
+    if (activeChat === null) {
+      setMessages([]);
+      setInput("");
+      setIsTyping(false);
+    }
+  }, [activeChat]);
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.style.height = "auto";
@@ -37,11 +46,21 @@ export default function ChatPage() {
   }, [input]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
   }, [messages, isTyping]);
 
   useEffect(() => {
-    if (activeChat) {
+    if (!activeChat) return;
+
+    // Load messages from API/database here
+    // Example:
+    // const savedMessages = await fetchChat(activeChat);
+
+    // Demo placeholder:
+    if (messages.length === 0) {
       setMessages([
         {
           id: "reopen",
@@ -50,33 +69,51 @@ export default function ChatPage() {
           content: `Session #${activeChat} restored. How can I help you continue?`,
         },
       ]);
-    } else {
-      setMessages([]);
     }
   }, [activeChat]);
 
   const sendMessage = async () => {
     const text = input.trim();
-    if (!text) return;
+
+    if (!text || isTyping) return;
+
     const userMsg: Message = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       role: "user",
       content: text,
       ts: new Date(),
     };
+
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+
+    let currentChatId = activeChat;
+
+    if (!currentChatId) {
+      currentChatId = Date.now().toString();
+      setActiveChat(currentChatId);
+    }
+
     setIsTyping(true);
-    if (!activeChat) setActiveChat(Date.now().toString());
-    await new Promise((r) => setTimeout(r, 1000 + Math.random() * 800));
-    const reply: Message = {
-      id: (Date.now() + 1).toString(),
-      role: "assistant",
-      ts: new Date(),
-      content: `I've analysed your request about "${text.slice(0, 50)}${text.length > 50 ? "…" : ""}"\n\nEnterpriseIQ routes this through the real-time orchestration layer, applying multi-model routing and workspace-aware context.\n\nWould you like me to dive deeper into any specific aspect?`,
-    };
-    setMessages((prev) => [...prev, reply]);
-    setIsTyping(false);
+
+    try {
+      await new Promise((r) => setTimeout(r, 1200));
+
+      const assistantMsg: Message = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        ts: new Date(),
+        content: `I've analysed your request about "${text}"
+
+EnterpriseIQ routes this through the real-time orchestration layer, applying multi-model routing and workspace-aware context.
+
+Would you like me to dive deeper into any specific aspect?`,
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -93,33 +130,11 @@ export default function ChatPage() {
 
   return (
     <div
-      className="flex flex-col flex-1 min-w-0 h-full"
+      className="flex flex-col flex-1 min-w-0 overflow-hidden"
       style={{ background: "var(--color-bg-tertiary)" }}
     >
       {/* ── Top bar ── */}
-      <div className="nav-glass flex items-center gap-3 px-5 py-3 shrink-0">
-        {!sidebarOpen && (
-          <>
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-1.5 rounded-lg transition-colors hover:opacity-70"
-              style={{ color: "var(--color-text-tertiary)" }}
-            >
-              <PanelLeftOpen className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setActiveChat(null)}
-              className="p-1.5 rounded-lg transition-colors hover:opacity-70"
-              style={{ color: "var(--color-text-tertiary)" }}
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-            <div
-              className="w-px h-4 mx-1"
-              style={{ background: "var(--color-border-primary)" }}
-            />
-          </>
-        )}
+      <div className="nav-glass flex items-center gap-3 px-5 py-3 shrink-0 overflow-visible min-h-[48px]">
         <span
           className="text-sm font-semibold"
           style={{ color: "var(--color-text-secondary)" }}
@@ -350,81 +365,89 @@ export default function ChatPage() {
            ════════════════════════════════════════════════════════════ */
         <>
           {/* Messages scroll area */}
-          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-5 scrollbar-thin">
-            <AnimatePresence initial={false}>
-              {messages.map((msg) => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                  className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  {/* Assistant icon */}
-                  {msg.role === "assistant" && (
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 btn-gradient">
+          {/* FIX 1: changed py-6 → pt-8 pb-6 for proper top breathing room */}
+          <div
+            ref={messagesScrollRef}
+            className="flex-1 overflow-y-auto min-h-0 pt-8 pb-6 scrollbar-thin"
+          >
+            {" "}
+            {/* FIX 2: constrain message list to same max-width as input (max-w-3xl) */}
+            <div className="w-full max-w-3xl mx-auto px-4 space-y-5">
+              <AnimatePresence initial={false}>
+                {messages.map((msg) => (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                    className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    {/* Assistant icon */}
+                    {msg.role === "assistant" && (
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 btn-gradient">
+                        <Sparkles className="w-3.5 h-3.5 text-white" />
+                      </div>
+                    )}
+
+                    {/* Bubble */}
+                    <div
+                      className="rounded-2xl px-4 py-3 text-sm leading-relaxed max-w-[75%] whitespace-pre-wrap"
+                      style={
+                        msg.role === "user"
+                          ? {
+                              background: "var(--gradient-brand)",
+                              color: "#ffffff",
+                              borderRadius: "16px 16px 4px 16px",
+                              boxShadow: "var(--shadow-md)",
+                            }
+                          : {
+                              background: "var(--color-bg-primary)",
+                              backdropFilter: "blur(16px)",
+                              border: "1px solid var(--color-border-tertiary)",
+                              color: "var(--color-text-primary)",
+                              borderRadius: "16px 16px 16px 4px",
+                              boxShadow: "var(--shadow-sm)",
+                            }
+                      }
+                    >
+                      {msg.content}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {/* Typing indicator */}
+              <AnimatePresence>
+                {isTyping && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="flex gap-3 items-start"
+                  >
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 btn-gradient">
                       <Sparkles className="w-3.5 h-3.5 text-white" />
                     </div>
-                  )}
-
-                  {/* Bubble */}
-                  <div
-                    className="rounded-2xl px-4 py-3 text-sm leading-relaxed max-w-[75%] whitespace-pre-wrap"
-                    style={
-                      msg.role === "user"
-                        ? {
-                            background: "var(--gradient-brand)",
-                            color: "#ffffff",
-                            borderRadius: "16px 16px 4px 16px",
-                            boxShadow: "var(--shadow-md)",
-                          }
-                        : {
-                            background: "var(--color-bg-primary)",
-                            backdropFilter: "blur(16px)",
-                            border: "1px solid var(--color-border-tertiary)",
-                            color: "var(--color-text-primary)",
-                            borderRadius: "16px 16px 16px 4px",
-                            boxShadow: "var(--shadow-sm)",
-                          }
-                    }
-                  >
-                    {msg.content}
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-
-            {/* Typing indicator */}
-            <AnimatePresence>
-              {isTyping && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="flex gap-3 items-start"
-                >
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 btn-gradient">
-                    <Sparkles className="w-3.5 h-3.5 text-white" />
-                  </div>
-                  <div
-                    className="glass-card px-4 py-3.5 flex items-center gap-1.5"
-                    style={{ borderRadius: "16px 16px 16px 4px" }}
-                  >
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className="w-2 h-2 rounded-full animate-bounce"
-                        style={{
-                          background: "var(--color-primary)",
-                          animationDelay: `${i * 0.18}s`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <div ref={messagesEndRef} />
+                    <div
+                      className="glass-card px-4 py-3.5 flex items-center gap-1.5"
+                      style={{ borderRadius: "16px 16px 16px 4px" }}
+                    >
+                      {[0, 1, 2].map((i) => (
+                        <div
+                          key={i}
+                          className="w-2 h-2 rounded-full animate-bounce"
+                          style={{
+                            background: "var(--color-primary)",
+                            animationDelay: `${i * 0.18}s`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <div ref={messagesEndRef} />
+            </div>
           </div>
 
           {/* Pinned input at bottom */}
