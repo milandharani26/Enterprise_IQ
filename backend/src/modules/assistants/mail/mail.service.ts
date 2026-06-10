@@ -21,7 +21,7 @@ export class MailService {
 
   async sendPasswordResetEmail(to: string, token: string) {
     const resetLink = `http://localhost:3000/reset-password?token=${token}`;
-    
+
     // Log it so you can test without real SMTP!
     this.logger.log(`\n\n[PASSWORD RESET LINK FOR ${to}]\n${resetLink}\n\n`);
 
@@ -35,7 +35,10 @@ export class MailService {
       });
       this.logger.log(`Reset email successfully sent to ${to}`);
     } catch (error) {
-      this.logger.error(`Failed to send email to ${to} (Check your SMTP settings in .env)`, error);
+      this.logger.error(
+        `Failed to send email to ${to} (Check your SMTP settings in .env)`,
+        error,
+      );
     }
   }
 }

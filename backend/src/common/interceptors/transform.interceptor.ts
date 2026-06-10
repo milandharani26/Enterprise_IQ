@@ -15,22 +15,23 @@ export interface Response<T> {
 }
 
 @Injectable()
-export class TransformInterceptor<T>
-  implements NestInterceptor<T, Response<T>>
-{
+export class TransformInterceptor<T> implements NestInterceptor<
+  T,
+  Response<T>
+> {
   intercept(
     context: ExecutionContext,
     next: CallHandler,
   ): Observable<Response<T>> {
     const ctx = context.switchToHttp();
-    const response = ctx.getResponse();
+    const response = ctx.getResponse<import('express').Response>();
 
     return next.handle().pipe(
       map((data) => ({
         success: true,
         statusCode: response.statusCode,
         message: 'Success',
-        data,
+        data: data as T,
       })),
     );
   }

@@ -15,6 +15,9 @@ import {
   Settings,
   Trash2,
   PanelLeftClose,
+  LayoutDashboardIcon,
+  ShieldCheckIcon,
+  UsersIcon,
 } from "lucide-react";
 
 // ── Shared Component Framework Interfaces ─────────────────────────────────────
@@ -240,7 +243,9 @@ export default function Sidebar() {
           {/* Setup Initial Chat Call Trigger */}
           <div className="px-3 pt-3 pb-2 shrink-0">
             <button
-              onClick={() => setActiveChat(null)}
+              onClick={() => {
+                (setActiveChat(null), router.push("/chat"));
+              }}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98]"
               style={{
                 background: "var(--brand-10)",
@@ -249,6 +254,46 @@ export default function Sidebar() {
               }}
             >
               <Plus className="w-4 h-4" /> New Chat
+            </button>
+          </div>
+
+          <div className="px-3 pt-3 pb-2 shrink-0">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98]"
+              style={{
+                background: "var(--brand-10)",
+                border: "1px solid var(--brand-20)",
+                color: "var(--brand-light)",
+              }}
+            >
+              <LayoutDashboardIcon className="w-4 h-4" /> Dashboard
+            </button>
+          </div>
+          <div className="px-3 pt-3 pb-2 shrink-0">
+            <button
+              onClick={() => router.push("/users")}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98]"
+              style={{
+                background: "var(--brand-10)",
+                border: "1px solid var(--brand-20)",
+                color: "var(--brand-light)",
+              }}
+            >
+              <UsersIcon className="w-4 h-4" /> User Management
+            </button>
+          </div>
+          <div className="px-3 pt-3 pb-2 shrink-0">
+            <button
+              onClick={() => router.push("/roles")}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98]"
+              style={{
+                background: "var(--brand-10)",
+                border: "1px solid var(--brand-20)",
+                color: "var(--brand-light)",
+              }}
+            >
+              <ShieldCheckIcon className="w-4 h-4" /> Roles Management
             </button>
           </div>
 

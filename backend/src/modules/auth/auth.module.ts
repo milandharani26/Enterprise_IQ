@@ -4,7 +4,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
 import { GoogleStrategy } from './strategies/google.strategy';
-import { MailModule } from '../mail/mail.module';
+import { MailModule } from '../assistants/mail/mail.module';
 
 @Module({
   imports: [UsersModule, JwtModule.register({}), MailModule],

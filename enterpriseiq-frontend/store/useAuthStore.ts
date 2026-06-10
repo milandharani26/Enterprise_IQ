@@ -12,10 +12,7 @@ interface UserRole {
 interface User {
   id: string;
   email: string;
-  password: string | null;
-  role: UserRole | null;
-  role_id: string;
-  hashedRefreshToken?: string;
+  name?: string; // Optional: JWT payload only contains sub + email
 }
 
 interface AuthState {
