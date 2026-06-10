@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useAuthStore } from "@/store/useAuthStore";
 import {
   Users,
   MessageSquare,
@@ -145,6 +146,9 @@ function ProgressBar({
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
+  const { user } = useAuthStore();
+  const displayName = user?.email ? user.email.split("@")[0] : "User";
+
   return (
     <div className="mesh-bg min-h-full p-6 space-y-6">
       {/* ── Hero bento ── */}
@@ -169,7 +173,8 @@ export default function Dashboard() {
             className="text-3xl font-bold tracking-tight"
             style={{ color: "var(--color-text-primary)" }}
           >
-            Good morning, <span className="gradient-text">Priyank</span> 👋
+            Good morning, <span className="gradient-text">{displayName}</span>{" "}
+            👋
           </h1>
           <p
             className="mt-1 text-sm"

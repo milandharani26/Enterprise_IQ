@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWorkspace } from "../(main)/layout";
+import { useAuthStore } from "@/store/useAuthStore";
 import {
   Plus,
   MessageSquare,
@@ -81,11 +82,13 @@ function groupByDate(sessions: ChatSession[]) {
 
 export function Avatar({ name, size = 7 }: { name: string; size?: number }) {
   const initials = name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+    ? name
+        .split(" ")
+        .map((w) => w[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "";
   return (
     <div
       className={`w-${size} h-${size} rounded-full flex items-center justify-center text-[11px] font-bold shrink-0`}
@@ -109,7 +112,10 @@ export default function Sidebar() {
   const [sessions, setSessions] = useState<ChatSession[]>(FAKE_HISTORY);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const user = { name: "Priyank Godhani", email: "priyank@acme.com" };
+  const { user: storeUser } = useAuthStore();
+  const emailPrefix = storeUser?.email ? storeUser.email.split("@")[0] : "User";
+  const user = { name: emailPrefix, email: storeUser?.email || "" };
+
   const grouped = groupByDate(sessions);
 
   useEffect(() => {

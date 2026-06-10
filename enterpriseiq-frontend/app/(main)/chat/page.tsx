@@ -4,6 +4,9 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWorkspace } from "@/app/(main)/layout";
 import { Send, Plus, Sparkles, PanelLeftOpen } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuthStore } from "@/store/useAuthStore";
+import apiClient from "@/lib/axios";
 
 interface Message {
   id: string;
@@ -27,7 +30,23 @@ export default function ChatPage() {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const user = { name: "Priyank Godhani" };
+
+  const { user, login } = useAuthStore();
+
+  const { data: meData, isSuccess: isMeSuccess } = useQuery({
+    queryKey: ["me"],
+    queryFn: async () => {
+      const res = await apiClient.get("/users/me");
+      return res.data?.data || res.data;
+    },
+    enabled: !user,
+  });
+
+  useEffect(() => {
+    if (isMeSuccess && meData) {
+      login(meData);
+    }
+  }, [isMeSuccess, meData, login]);
 
   useEffect(() => {
     if (inputRef.current) {

@@ -1,9 +1,21 @@
 import { create } from "zustand";
 
+interface UserRole {
+  id: string;
+  name: string;
+  role_code: string;
+  assistant_ids: string[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
 interface User {
   id: string;
   email: string;
-  name?: string; // Optional: JWT payload only contains sub + email
+  password: string | null;
+  role: UserRole | null;
+  role_id: string;
+  hashedRefreshToken?: string;
 }
 
 interface AuthState {
