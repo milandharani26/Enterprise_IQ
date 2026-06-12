@@ -7,7 +7,7 @@ import {
 } from "@/types/auth";
 
 // Backend base URL — used for server-redirect flows like Google OAuth
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export const authService = {
   /**
@@ -20,6 +20,7 @@ export const authService = {
       "/auth/signin",
       credentials,
     );
+    console.log(response.data.data);
     return response.data.data;
   },
 
@@ -44,6 +45,43 @@ export const authService = {
   googleLogin: () => {
     if (typeof window !== "undefined") {
       window.location.href = `${BACKEND_URL}/auth/google`;
+    }
+  },
+
+  /**
+   * Request a password reset email.
+   * Backend: POST /auth/forgot-password
+   */
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      "/auth/forgot-password",
+      { email },
+    );
+    return response.data;
+  },
+
+  /**
+   * Reset password with token.
+   * Backend: POST /auth/reset-password
+   */
+  resetPassword: async (
+    token: string,
+    newPassword: string,
+  ): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      "/auth/reset-password",
+      { token, newPassword },
+    );
+    return response.data;
+  },
+
+  logout: async () => {
+    try {
+      const response =
+        await apiClient.post<ApiResponse<AuthTokens>>("/auth/logout");
+      return response.data.data;
+    } catch (error) {
+      console.log(error);
     }
   },
 };

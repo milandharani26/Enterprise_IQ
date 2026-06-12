@@ -1,15 +1,10 @@
 import { create } from "zustand";
-
-interface User {
-  id: string;
-  email: string;
-  name?: string; // Optional: JWT payload only contains sub + email
-}
+import type { UserWithRole } from "@/types/auth";
 
 interface AuthState {
-  user: User | null;
+  user: UserWithRole | null;
   isAuthenticated: boolean;
-  login: (user: User) => void;
+  login: (user: UserWithRole) => void;
   logout: () => void;
 }
 

@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useWorkspace } from "@/app/(main)/layout";
 import { Avatar } from "./Sidebar";
 import { Send, Plus, Sparkles, PanelLeftOpen } from "lucide-react";
+import { useAuthStore } from "@/store/useAuthStore";
+import { getRoleWithAssistantById } from "@/hooks/queries/useRoleQueries";
 
 interface Message {
   id: string;
@@ -28,8 +30,11 @@ export default function ChatPage() {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const user = { name: "Priyank Godhani" };
 
+  const { user: storeUser } = useAuthStore();
+  const emailPrefix = storeUser?.email ? storeUser.email.split("@")[0] : "User";
+  const user = { name: emailPrefix };
+  // const {data:assistants}=getRoleWithAssistantById();
   // Dynamic textarea height adjustment
   useEffect(() => {
     if (inputRef.current) {
@@ -99,43 +104,6 @@ export default function ChatPage() {
       className="flex flex-col flex-1 min-w-0 h-full"
       style={{ background: "var(--color-bg-tertiary)" }}
     >
-      {/* ── Top bar ── */}
-      <div className="nav-glass flex items-center gap-3 px-5 py-3 shrink-0">
-        {!sidebarOpen && (
-          <>
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-1.5 rounded-lg transition-colors hover:opacity-70"
-              style={{ color: "var(--color-text-tertiary)" }}
-            >
-              <PanelLeftOpen className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setActiveChat(null)}
-              className="p-1.5 rounded-lg transition-colors hover:opacity-70"
-              style={{ color: "var(--color-text-tertiary)" }}
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-            <div
-              className="w-px h-4 mx-1"
-              style={{ background: "var(--color-border-primary)" }}
-            />
-          </>
-        )}
-        <span
-          className="text-sm font-semibold"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          {activeChat ? "Active Session" : "New Chat"}
-        </span>
-        {activeChat && (
-          <span className="ml-2 text-[11px] px-2 py-0.5 rounded-full font-medium badge-info">
-            Session #{activeChat.slice(-6)}
-          </span>
-        )}
-      </div>
-
       {/* ── Messages ── */}
       <div className="flex-1 overflow-y-auto px-4 py-8 space-y-6 scrollbar-thin">
         {messages.length === 0 ? (

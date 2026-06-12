@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode } from "react";
 import Sidebar from "../_components/Sidebar";
+import { Menu } from "lucide-react"; // Import the Hamburger Icon
 
 interface WorkspaceContextType {
   sidebarOpen: boolean;
@@ -30,14 +31,40 @@ export default function MainLayout({ children }: { children: ReactNode }) {
       value={{ sidebarOpen, setSidebarOpen, activeChat, setActiveChat }}
     >
       <div
-        className="flex h-screen w-screen overflow-hidden"
+        className="flex h-screen w-screen overflow-hidden relative"
         style={{ background: "var(--auth-panel-right)" }}
       >
-        {/* Persistent Shared Layout Sidebar Component */}
+        {/* Backdrop for Mobile & Tablet view only (Handles click-outside closing) */}
+        {sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden block transition-opacity duration-200"
+          />
+        )}
+
+        {/* Adaptive Sidebar Drawer / Rail */}
         <Sidebar />
 
-        {/* Dynamic page container view */}
-        <main className="flex-1 min-w-0 h-full relative flex flex-col">
+        {/* Floating Mobile/Tablet Hamburger Trigger - ONLY displays when sidebar is closed */}
+        {!sidebarOpen && (
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="fixed top-4 left-4 p-2 rounded-lg border shadow-md transition-all duration-150 active:scale-95 z-30 block lg:hidden hover:opacity-80"
+            style={{
+              background: "var(--auth-panel-left)",
+              borderColor: "var(--auth-edge-line)",
+              color: "var(--brand-light)",
+            }}
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* Main Application Page View Frame */}
+        {/* Adds padding on mobile when the menu icon is visible so content isn't covered */}
+        <main
+          className={`flex-1 min-w-0 h-full relative flex flex-col ${!sidebarOpen ? "pt-14 lg:pt-0" : ""}`}
+        >
           {children}
         </main>
       </div>

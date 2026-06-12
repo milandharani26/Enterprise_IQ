@@ -3,6 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLoginMutation } from "@/hooks/mutations/useAuthMutation";
 import { authService } from "@/services/authService";
 import { useState, useEffect } from "react";
@@ -235,12 +236,12 @@ export function LoginForm() {
 
           {/* Forgot password */}
           <motion.div variants={item} className="flex justify-end">
-            <a
-              href="#"
+            <Link
+              href="/forgot-password"
               className="text-xs transition-colors underline underline-offset-2 text-muted-foreground hover:text-foreground"
             >
               Forgot password?
-            </a>
+            </Link>
           </motion.div>
 
           {/* Log in button */}
