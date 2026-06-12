@@ -9,8 +9,9 @@ import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { AssistantsModule } from './modules/assistants/assistants.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { MailModule } from './modules/assistants/mail/mail.module';
+import { MailModule } from './modules/mail/mail.module';
 import { RedisModule } from '@nestjs-modules/ioredis';
+import { ConversationsModule } from './modules/conversations/conversations.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { RedisModule } from '@nestjs-modules/ioredis';
     AssistantsModule,
     AuthModule,
     MailModule,
+    ConversationsModule,
   ],
   controllers: [AppController],
   providers: [
