@@ -1,48 +1,47 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 
-// Create a custom axios instance
+// Create a custom axios instance pointing at the NestJS backend
 export const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://api.example.com", // Fallback fallback URL
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
   timeout: 10000,
+  withCredentials: true, // Required so httpOnly cookies (accessToken / refreshToken) are sent
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
 });
 
-// Request Interceptor
+// ── Request interceptor ──────────────────────────────────────────────────────
+// Attach the access token from localStorage as a Bearer header on every request
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Perform actions before request is sent (e.g. inject authorization token)
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("auth_token");
+      const token = localStorage.getItem("access_token");
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
     return config;
   },
-  (error: AxiosError) => {
-    return Promise.reject(error);
-  }
+  (error: AxiosError) => Promise.reject(error),
 );
 
-// Response Interceptor
+// ── Response interceptor ─────────────────────────────────────────────────────
+// Centrally handle auth errors; clear stale token on 401
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    // Handle error responses centrally (e.g. logging, redirection on 401/403)
     if (error.response) {
       const { status } = error.response;
       if (status === 401) {
-        console.warn("Unauthorized access - logging out or redirecting...");
+        console.warn("Unauthorized — clearing stored token.");
         if (typeof window !== "undefined") {
-          localStorage.removeItem("auth_token");
+          localStorage.removeItem("access_token");
         }
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;
