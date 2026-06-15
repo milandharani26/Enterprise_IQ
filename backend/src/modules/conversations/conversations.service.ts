@@ -13,6 +13,12 @@ import { SendMessageDto } from './dto/send-message.dto';
 import { MessageRole } from './enums/message-role.enum';
 import { PaginationQueryDto, PaginatedResponseDto } from './dto/pagination.dto';
 
+interface FastApiChatResponse {
+  id: string;
+  conversation_id: string;
+  role: string;
+  content: string;
+}
 @Injectable()
 export class ConversationsService {
   constructor(
@@ -84,6 +90,7 @@ export class ConversationsService {
     return conversation;
   }
 
+  // Notice: organizationId is completely removed from the arguments!
   async sendMessage(
     userId: string,
     id: string,
@@ -103,25 +110,60 @@ export class ConversationsService {
       );
     }
 
-    // Create user message
+    // 1. Create user message locally in NestJS
     const userMessage = this.messageRepository.create({
       conversation_id: id,
       role: MessageRole.USER,
       content: sendMessageDto.content,
     });
-
     await this.messageRepository.save(userMessage);
 
-    // Placeholder for AI response generation
-    const assistantContent = 'AI response placeholder';
+    // 2. Call your FastAPI Admin Backend to generate the response
+    let assistantContent = 'AI response placeholder';
+    try {
+      const adminBackendUrl =
+        process.env.ADMIN_BACKEND_URL || 'http://localhost:8000';
+      const serviceToken = process.env.SERVICE_TOKEN || 'your-signed-jwt-token';
 
-    // Create assistant message
+      const response = await fetch(
+        `${adminBackendUrl}/api/v1/conversations/chat`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            // Passing the token containing the organization_id!
+            Authorization: `Bearer ${serviceToken}`,
+          },
+          body: JSON.stringify({
+            conversation_id: id,
+            user_id: userId,
+            // Notice: organization_id is no longer needed in the body
+            content: sendMessageDto.content,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Admin FastAPI backend responded with status ${response.status}`,
+        );
+      }
+
+      // FastAPI returns the `MessageResponseSchema` which contains the AI `content`
+      // FastAPI returns the `MessageResponseSchema` which contains the AI `content`
+      const data = (await response.json()) as FastApiChatResponse;
+      assistantContent = data.content; // 👈 No more unsafe member access error!
+    } catch (error) {
+      console.error('Error communicating with Admin FastAPI Backend:', error);
+      assistantContent = 'Sorry, the AI engine is currently unavailable.';
+    }
+
+    // 3. Create assistant message locally in NestJS using the AI response
     const assistantMessage = this.messageRepository.create({
       conversation_id: id,
       role: MessageRole.ASSISTANT,
       content: assistantContent,
     });
-
     await this.messageRepository.save(assistantMessage);
 
     // Update conversation timestamp
