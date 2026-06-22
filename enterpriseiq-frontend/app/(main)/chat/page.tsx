@@ -109,6 +109,8 @@ export default function ChatPage() {
 
   const messages: Message[] = conversationDetails?.messages ?? [];
 
+  const isNewConversation = !activeChat && messages.length === 0;
+
   const handleSendMessage = async () => {
     const text = input.trim();
     if (!text || isSending) return;
@@ -173,7 +175,7 @@ export default function ChatPage() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute top-full right-2 mt-2 w-56 rounded-xl border p-1 z-[999] shadow-2xl max-h-60 overflow-y-auto scrollbar-thin"
+            className={`absolute right-2 w-56 rounded-xl border p-1 z-[999] shadow-2xl max-h-60 overflow-y-auto scrollbar-thin ${isNewConversation ? "top-full mt-2" : "bottom-full mb-2"}`}
             style={{
               background: "var(--color-bg-elevated)",
               backgroundColor: "rgba(20, 20, 25, 0.85)",
