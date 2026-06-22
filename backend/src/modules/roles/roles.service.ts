@@ -30,25 +30,23 @@ export class RolesService {
 
   async findAll(): Promise<any[]> {
     const roles = await this.rolesRepository.find();
+    const allAssistants = await this.assistantsRepository.find();
+    const assistantsMap = new Map(allAssistants.map((a) => [a.id, a]));
 
-    const allAssistantIds = roles.flatMap((role) => role.assistant_ids || []);
-    const uniqueAssistantIds = [...new Set(allAssistantIds)];
-
-    let assistants: Assistant[] = [];
-    if (uniqueAssistantIds.length > 0) {
-      assistants = await this.assistantsRepository.find({
-        where: { id: In(uniqueAssistantIds) },
-      });
-    }
-
-    const assistantsMap = new Map(assistants.map((a) => [a.id, a]));
-
-    return roles.map((role) => ({
-      ...role,
-      assistant_ids: (role.assistant_ids || [])
-        .map((id) => assistantsMap.get(id))
-        .filter(Boolean),
-    }));
+    return roles.map((role) => {
+      let resolvedAssistants: Assistant[] = [];
+      if (role.role_code?.toLowerCase() === 'admin') {
+        resolvedAssistants = allAssistants;
+      } else {
+        resolvedAssistants = (role.assistant_ids || [])
+          .map((id) => assistantsMap.get(id))
+          .filter((a): a is Assistant => Boolean(a));
+      }
+      return {
+        ...role,
+        assistant_ids: resolvedAssistants,
+      };
+    });
   }
 
   async findOne(id: string): Promise<Role> {
@@ -59,6 +57,9 @@ export class RolesService {
 
   async findAssistantsByRole(id: string): Promise<Assistant[]> {
     const role = await this.findOne(id);
+    if (role.role_code?.toLowerCase() === 'admin') {
+      return this.assistantsRepository.find();
+    }
     if (!role.assistant_ids || role.assistant_ids.length === 0) {
       return [];
     }

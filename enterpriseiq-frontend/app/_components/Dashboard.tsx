@@ -2,18 +2,23 @@
 
 import { motion } from "framer-motion";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useDashboardStats } from "@/hooks/queries/useAnalyticsQueries";
 import {
   Users,
   MessageSquare,
   Zap,
   TrendingUp,
-  TrendingDown,
   ArrowUpRight,
   Clock,
   CheckCircle2,
   AlertTriangle,
   Activity,
+  Loader2,
 } from "lucide-react";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 12 },
@@ -27,21 +32,20 @@ function StatCard({
   label,
   value,
   delta,
-  positive,
   colorVar,
   glowColor,
+  valueClassName = "text-3xl font-bold tracking-tight",
 }: {
   icon: any;
   label: string;
-  value: string;
-  delta: string;
-  positive: boolean;
+  value: string | number;
+  delta?: string;
   colorVar: string;
   glowColor: string;
+  valueClassName?: string;
 }) {
   return (
     <div className="glass-card glass-card-hover p-5 relative overflow-hidden">
-      {/* Corner wash */}
       <div
         className="absolute top-0 right-0 w-32 h-32 pointer-events-none"
         style={{
@@ -50,7 +54,7 @@ function StatCard({
       />
 
       <div className="relative z-10 flex items-start justify-between">
-        <div>
+        <div className="flex-1 min-w-0 pr-3">
           <p
             className="text-xs font-semibold uppercase tracking-widest mb-2"
             style={{ color: "var(--color-text-tertiary)" }}
@@ -58,45 +62,37 @@ function StatCard({
             {label}
           </p>
           <p
-            className="text-3xl font-bold tracking-tight"
+            className={`${valueClassName} truncate`}
             style={{ color: colorVar }}
+            title={String(value)}
           >
             {value}
           </p>
-          <div className="flex items-center gap-1 mt-2">
-            {positive ? (
+          {delta && (
+            <div className="flex items-center gap-1 mt-2">
               <TrendingUp
                 className="w-3.5 h-3.5"
                 style={{ color: "var(--color-success)" }}
               />
-            ) : (
-              <TrendingDown
-                className="w-3.5 h-3.5"
-                style={{ color: "var(--color-danger)" }}
-              />
-            )}
-            <span
-              className="text-xs font-medium"
-              style={{
-                color: positive
-                  ? "var(--color-success)"
-                  : "var(--color-danger)",
-              }}
-            >
-              {delta}
-            </span>
-            <span
-              className="text-xs"
-              style={{ color: "var(--color-text-tertiary)" }}
-            >
-              vs last week
-            </span>
-          </div>
+              <span
+                className="text-xs font-medium"
+                style={{ color: "var(--color-success)" }}
+              >
+                {delta}
+              </span>
+              <span
+                className="text-xs"
+                style={{ color: "var(--color-text-tertiary)" }}
+              >
+                vs last week
+              </span>
+            </div>
+          )}
         </div>
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
           style={{
-            background: `${glowColor}`,
+            background: glowColor,
             border: `1px solid ${glowColor}`,
           }}
         >
@@ -144,10 +140,18 @@ function ProgressBar({
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const { user } = useAuthStore();
-  const displayName = user?.email ? user.email.split("@")[0] : "User";
+  const rawName = user?.email ? user.email.split("@")[0] : "User";
+  const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+  const { data: stats, isLoading, isError } = useDashboardStats();
+
+  const colors = [
+    "var(--color-primary)",
+    "var(--color-accent-foreground)",
+    "var(--color-success)",
+    "var(--color-warning)",
+  ];
 
   return (
     <div className="mesh-bg min-h-full p-6 space-y-6">
@@ -156,7 +160,6 @@ export default function Dashboard() {
         {...fadeUp(0)}
         className="bento-hero p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
       >
-        {/* Blur orb */}
         <div
           className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none opacity-30"
           style={{ background: "var(--gradient-brand)" }}
@@ -173,7 +176,8 @@ export default function Dashboard() {
             className="text-3xl font-bold tracking-tight"
             style={{ color: "var(--color-text-primary)" }}
           >
-            Good morning, <span className="gradient-text">{displayName}</span>{" "}
+            Good morning,{" "}
+            <span style={{ color: "var(--color-primary)" }}>{displayName}</span>{" "}
             👋
           </h1>
           <p
@@ -183,126 +187,243 @@ export default function Dashboard() {
             Here's what's happening with your workspace today.
           </p>
         </div>
-
-        <div className="relative z-10 flex gap-3">
-          <button className="btn-gradient px-5 py-2.5 text-sm rounded-xl flex items-center gap-2">
-            <Zap className="w-4 h-4" /> New Session
-          </button>
-          <button
-            className="glass-card px-5 py-2.5 text-sm font-semibold flex items-center gap-2"
-            style={{
-              color: "var(--color-text-secondary)",
-              borderRadius: "var(--radius-md)",
-            }}
-          >
-            <Activity className="w-4 h-4" /> View Logs
-          </button>
-        </div>
       </motion.div>
 
       {/* ── Stat cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {[
-          {
-            icon: MessageSquare,
-            label: "Total Queries",
-            value: "24,891",
-            delta: "+18%",
-            positive: true,
-            colorVar: "var(--color-primary)",
-            glowColor: "rgba(99,102,241,0.12)",
-          },
-          {
-            icon: Users,
-            label: "Active Users",
-            value: "1,284",
-            delta: "+7%",
-            positive: true,
-            colorVar: "var(--color-accent)",
-            glowColor: "rgba(236,72,153,0.10)",
-          },
-          {
-            icon: Zap,
-            label: "Avg Latency",
-            value: "48ms",
-            delta: "-12%",
-            positive: true,
-            colorVar: "var(--color-success)",
-            glowColor: "rgba(16,185,129,0.10)",
-          },
-          {
-            icon: AlertTriangle,
-            label: "Error Rate",
-            value: "0.4%",
-            delta: "+0.1%",
-            positive: false,
-            colorVar: "var(--color-warning)",
-            glowColor: "rgba(245,158,11,0.10)",
-          },
-        ].map((s, i) => (
-          <motion.div key={s.label} {...fadeUp(0.08 + i * 0.06)}>
-            <StatCard {...s} />
-          </motion.div>
-        ))}
-      </div>
-
-      {/* ── 3-col bento ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        {/* Model usage breakdown */}
-        <motion.div {...fadeUp(0.25)} className="glass-card p-5 space-y-4">
-          <div>
-            <p
-              className="text-[11px] font-semibold uppercase tracking-widest"
-              style={{ color: "var(--color-text-tertiary)" }}
-            >
-              Model Usage
-            </p>
-            <h3
-              className="text-base font-bold mt-0.5"
-              style={{ color: "var(--color-text-primary)" }}
-            >
-              Breakdown
-            </h3>
-          </div>
-          <div className="space-y-4">
-            <ProgressBar
-              label="GPT-4o"
-              value={52}
-              color="var(--color-primary)"
-            />
-            <ProgressBar
-              label="Claude 3.5"
-              value={31}
-              color="var(--color-accent)"
-            />
-            <ProgressBar
-              label="Gemini Pro"
-              value={11}
-              color="var(--color-accent-secondary)"
-            />
-            <ProgressBar
-              label="Llama 3"
-              value={6}
-              color="var(--color-warning)"
-            />
+      {isLoading ? (
+        <div className="flex items-center justify-center p-12">
+          <Loader2
+            className="w-8 h-8 animate-spin"
+            style={{ color: "var(--color-primary)" }}
+          />
+        </div>
+      ) : isError || !stats ? (
+        <div
+          className="p-4 rounded-xl"
+          style={{ background: "var(--color-danger)", color: "#fff" }}
+        >
+          Failed to load dashboard statistics.
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <motion.div {...fadeUp(0.08)}>
+              <StatCard
+                icon={MessageSquare}
+                label="Total Queries"
+                value={stats.totalQueries.toLocaleString()}
+                colorVar="var(--color-primary)"
+                glowColor="rgba(99,102,241,0.12)"
+              />
+            </motion.div>
+            <motion.div {...fadeUp(0.14)}>
+              <StatCard
+                icon={Users}
+                label="Active Users"
+                value={stats.activeUsers.toLocaleString()}
+                colorVar="#ec4899"
+                glowColor="rgba(236,72,153,0.10)"
+              />
+            </motion.div>
+            <motion.div {...fadeUp(0.2)}>
+              <StatCard
+                icon={Zap}
+                label="Avg Queries / User"
+                value={stats.avgQueriesPerUser}
+                colorVar="var(--color-success)"
+                glowColor="rgba(16,185,129,0.10)"
+              />
+            </motion.div>
+            <motion.div {...fadeUp(0.26)}>
+              <StatCard
+                icon={Activity}
+                label="Top Assistant"
+                value={stats.mostActiveAssistant}
+                colorVar="var(--color-warning)"
+                glowColor="rgba(245,158,11,0.10)"
+                valueClassName="text-xl font-bold tracking-tight"
+              />
+            </motion.div>
           </div>
 
-          <div
-            className="pt-3 border-t"
-            style={{ borderColor: "var(--color-border-primary)" }}
-          >
-            <div className="flex items-center justify-between">
-              <p
-                className="text-xs"
-                style={{ color: "var(--color-text-tertiary)" }}
-              >
-                Total tokens this month
-              </p>
-              <p className="text-sm font-bold gradient-text">12.4M</p>
-            </div>
+          {/* ── 4-col bento ── */}
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+            {/* Model usage breakdown */}
+            <motion.div
+              {...fadeUp(0.32)}
+              className="glass-card p-5 space-y-4 xl:col-span-1"
+            >
+              <div>
+                <p
+                  className="text-[11px] font-semibold uppercase tracking-widest"
+                  style={{ color: "var(--color-text-tertiary)" }}
+                >
+                  Model Usage
+                </p>
+                <h3
+                  className="text-base font-bold mt-0.5"
+                  style={{ color: "var(--color-text-primary)" }}
+                >
+                  Breakdown
+                </h3>
+              </div>
+              <div className="space-y-4">
+                {stats.modelUsage.length === 0 ? (
+                  <p
+                    className="text-sm"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
+                    No data available yet.
+                  </p>
+                ) : (
+                  stats.modelUsage.map((model, i) => (
+                    <ProgressBar
+                      key={model.name}
+                      label={model.name}
+                      value={Math.round(
+                        (model.usage / Math.max(1, stats.totalQueries)) * 100,
+                      )}
+                      color={colors[i % colors.length]}
+                    />
+                  ))
+                )}
+              </div>
+            </motion.div>
+
+            {/* Recent Queries Feed */}
+            <motion.div
+              {...fadeUp(0.38)}
+              className="glass-card p-5 space-y-4 xl:col-span-2"
+            >
+              <div>
+                <p
+                  className="text-[11px] font-semibold uppercase tracking-widest"
+                  style={{ color: "var(--color-text-tertiary)" }}
+                >
+                  Live Feed
+                </p>
+                <h3
+                  className="text-base font-bold mt-0.5"
+                  style={{ color: "var(--color-text-primary)" }}
+                >
+                  Recent Queries
+                </h3>
+              </div>
+              <div className="space-y-3">
+                {stats.recentQueries.length === 0 ? (
+                  <p
+                    className="text-sm"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
+                    No recent activity found.
+                  </p>
+                ) : (
+                  stats.recentQueries.map((query) => (
+                    <div
+                      key={query.id}
+                      className="p-3 rounded-lg flex gap-3 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                    >
+                      <div className="mt-1 shrink-0">
+                        <MessageSquare
+                          className="w-4 h-4"
+                          style={{ color: "var(--color-primary)" }}
+                        />
+                      </div>
+                      <div className="flex-1 overflow-hidden">
+                        <p
+                          className="text-sm truncate"
+                          style={{ color: "var(--color-text-primary)" }}
+                        >
+                          "{query.content}"
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span
+                            className="text-xs font-medium"
+                            style={{ color: "var(--color-text-secondary)" }}
+                          >
+                            {query.user_email}
+                          </span>
+                          <span
+                            className="text-[10px] uppercase opacity-50"
+                            style={{ color: "var(--color-text-tertiary)" }}
+                          >
+                            • {dayjs(query.created_at).fromNow()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+
+            {/* Common Questions */}
+            <motion.div
+              {...fadeUp(0.44)}
+              className="glass-card p-5 space-y-4 xl:col-span-1"
+            >
+              <div>
+                <p
+                  className="text-[11px] font-semibold uppercase tracking-widest"
+                  style={{ color: "var(--color-text-tertiary)" }}
+                >
+                  Insights
+                </p>
+                <h3
+                  className="text-base font-bold mt-0.5"
+                  style={{ color: "var(--color-text-primary)" }}
+                >
+                  Common Questions
+                </h3>
+              </div>
+              <div className="space-y-3">
+                {!stats.commonQuestions ||
+                stats.commonQuestions.length === 0 ? (
+                  <p
+                    className="text-sm"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
+                    No common questions found.
+                  </p>
+                ) : (
+                  stats.commonQuestions.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-lg flex items-center justify-between transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                    >
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                          style={{
+                            background: "rgba(99,102,241,0.1)",
+                            color: "var(--color-primary)",
+                          }}
+                        >
+                          <span className="text-xs font-semibold">
+                            {idx + 1}
+                          </span>
+                        </div>
+                        <p
+                          className="text-sm truncate"
+                          style={{ color: "var(--color-text-primary)" }}
+                        >
+                          "{item.question}"
+                        </p>
+                      </div>
+                      <span
+                        className="text-xs font-medium ml-2"
+                        style={{ color: "var(--color-text-secondary)" }}
+                      >
+                        {item.count}x
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
           </div>
-        </motion.div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

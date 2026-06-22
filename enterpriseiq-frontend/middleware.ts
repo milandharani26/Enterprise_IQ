@@ -10,6 +10,13 @@ export function middleware(request: NextRequest) {
 
   // Protect auth routes: prevent logged-in users from accessing sign-in / sign-up
   if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) {
+    if (request.nextUrl.searchParams.get("clear") === "true") {
+      const response = NextResponse.next();
+      response.cookies.delete("accessToken");
+      response.cookies.delete("refreshToken");
+      return response;
+    }
+
     if (hasToken) {
       return NextResponse.redirect(new URL("/chat", request.url));
     }

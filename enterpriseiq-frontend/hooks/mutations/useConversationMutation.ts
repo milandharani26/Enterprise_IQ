@@ -18,7 +18,52 @@ export function useConversationMutations() {
   const sendMessageMutation = useMutation({
     mutationFn: ({ id, content }: { id: string; content: string }) =>
       conversationService.sendMessage(id, content),
-    onSuccess: (data, variables) => {
+    onMutate: async (variables) => {
+      // Cancel any outgoing refetches so they don't overwrite optimistic update
+      await queryClient.cancelQueries({
+        queryKey: ["conversation-details", variables.id],
+      });
+
+      // Snapshot the previous value
+      const previousDetails = queryClient.getQueryData([
+        "conversation-details",
+        variables.id,
+      ]);
+
+      // Optimistically update the UI to show the user's message immediately
+      queryClient.setQueryData(
+        ["conversation-details", variables.id],
+        (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            messages: [
+              ...(old.messages || []),
+              {
+                id: `optimistic-${Date.now()}`,
+                conversation_id: variables.id,
+                role: "user",
+                content: variables.content,
+                created_at: new Date().toISOString(),
+              },
+            ],
+          };
+        },
+      );
+
+      // Return context for rollback
+      return { previousDetails };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousDetails) {
+        queryClient.setQueryData(
+          ["conversation-details", variables.id],
+          context.previousDetails,
+        );
+      }
+    },
+    onSettled: (data, error, variables) => {
       // Invalidate both the target chat messages and the general history order list
       queryClient.invalidateQueries({
         queryKey: ["conversation-details", variables.id],

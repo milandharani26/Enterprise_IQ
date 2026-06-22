@@ -40,7 +40,7 @@ export function ThemeToggle() {
       variant="outline"
       size="icon"
       onClick={toggleTheme}
-      className="fixed top-4 right-4 z-50 rounded-full bg-background border-border shadow-sm hover:bg-muted text-foreground flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-105 active:scale-95"
+      className="fixed bottom-6 right-6 z-50 rounded-full bg-background border-border shadow-md hover:bg-muted text-foreground flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-105 active:scale-95"
       aria-label="Toggle theme"
     >
       {theme === "light" ? (
