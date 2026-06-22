@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Lock,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 
 // Hook and Type Imports
@@ -78,10 +79,26 @@ export default function RolesPage() {
     isLoading: isAssistantsLoading,
     isError: isAssistantsError,
     error: assistantsError,
+    refetch: refetchAssistants,
   } = useQuery({
     queryKey: ["assistants"],
     queryFn: assistantService.getAllAssistents,
   });
+
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncAssistants = async () => {
+    try {
+      setIsSyncing(true);
+      await assistantService.syncAssistants();
+      await refetchAssistants();
+    } catch (error) {
+      console.error("Failed to sync assistants", error);
+      alert("Failed to sync assistants.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Initialize your role mutation hook
   const { mutate: editRolePermissions, isPending: isSaving } =
@@ -168,13 +185,16 @@ export default function RolesPage() {
     });
   };
 
-  // Handler to submit configuration arrays to backend patch api endpoints
   const handleSaveChanges = () => {
     if (!selectedRole) return;
 
+    const payloadAssistants = (selectedRole.assistant_ids || []).map(
+      (a: any) => a?.id ?? a,
+    );
+
     editRolePermissions({
       roleId: selectedRole.id,
-      assistents: selectedRole.assistant_ids || [],
+      assistents: payloadAssistants,
     });
   };
 
@@ -206,9 +226,25 @@ export default function RolesPage() {
             </p>
           </div>
         </div>
-        <button className="btn-gradient px-4 py-2.5 text-sm rounded-xl flex items-center gap-2 self-start sm:self-auto">
-          <Plus className="w-4 h-4" /> Create Role
-        </button>
+        <div className="flex gap-2 self-start sm:self-auto">
+          <button
+            onClick={handleSyncAssistants}
+            disabled={isSyncing}
+            className="glass-card px-4 py-2.5 text-sm rounded-xl flex items-center gap-2 transition-colors hover:bg-white/5 disabled:opacity-50"
+            style={{
+              color: "var(--color-text-primary)",
+              borderColor: "var(--color-border-primary)",
+            }}
+          >
+            <RefreshCw
+              className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`}
+            />
+            {isSyncing ? "Syncing..." : "Sync Assistants"}
+          </button>
+          <button className="btn-gradient px-4 py-2.5 text-sm rounded-xl flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Create Role
+          </button>
+        </div>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

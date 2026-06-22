@@ -24,6 +24,14 @@ import {
 export class AssistantsController {
   constructor(private readonly assistantsService: AssistantsService) {}
 
+  @Post('sync')
+  @ApiOperation({ summary: 'Sync assistants from enterpriseiq_ai' })
+  @ApiResponse({ status: 200, description: 'Assistants successfully synced.' })
+  @ApiResponse({ status: 500, description: 'Failed to sync.' })
+  async sync() {
+    return this.assistantsService.syncAssistants();
+  }
+
   @Post()
   @ApiOperation({ summary: 'Create a new assistant' })
   @ApiResponse({ status: 201, description: 'Assistant successfully created.' })

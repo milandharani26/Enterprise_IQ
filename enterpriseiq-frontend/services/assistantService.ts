@@ -6,4 +6,8 @@ export const assistantService = {
     const res = await apiClient.get<assistantResponse>("/assistants");
     return res.data.data;
   },
+  syncAssistants: async () => {
+    const res = await apiClient.post("/assistants/sync");
+    return res.data;
+  },
 };
