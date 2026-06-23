@@ -12,6 +12,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { MailModule } from './modules/mail/mail.module';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { ConversationsModule } from './modules/conversations/conversations.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { ConversationsModule } from './modules/conversations/conversations.modul
     AuthModule,
     MailModule,
     ConversationsModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -56,4 +58,5 @@ import { ConversationsModule } from './modules/conversations/conversations.modul
     },
   ],
 })
+// trigger hot reload
 export class AppModule {}

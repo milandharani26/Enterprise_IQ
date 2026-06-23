@@ -137,6 +137,7 @@ export class ConversationsService {
           body: JSON.stringify({
             conversation_id: id,
             user_id: userId,
+            agent_id: conversation.agent_id,
             // Notice: organization_id is no longer needed in the body
             content: sendMessageDto.content,
           }),

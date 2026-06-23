@@ -3,7 +3,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 // Create a custom axios instance pointing at the NestJS backend
 export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000",
-  timeout: 10000,
+  timeout: 60000,
   withCredentials: true, // Required so httpOnly cookies (accessToken / refreshToken) are sent
   headers: {
     "Content-Type": "application/json",
@@ -62,7 +62,7 @@ apiClient.interceptors.response.use(
 
         try {
           await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/auth/refresh`,
+            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/auth/refresh`,
             { withCredentials: true },
           );
 
@@ -72,7 +72,7 @@ apiClient.interceptors.response.use(
           processQueue(refreshError, null);
           console.warn("Unauthorized — refresh failed, redirecting to login.");
           if (typeof window !== "undefined") {
-            window.location.href = "/sign-in";
+            window.location.href = "/sign-in?clear=true";
           }
           return Promise.reject(refreshError);
         } finally {

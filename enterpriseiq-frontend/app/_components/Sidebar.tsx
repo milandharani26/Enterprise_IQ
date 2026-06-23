@@ -33,9 +33,9 @@ export function Avatar({ name, size = 7 }: { name: string; size?: number }) {
     <div
       className={`w-${size} h-${size} rounded-full flex items-center justify-center text-[11px] font-bold shrink-0`}
       style={{
-        background: "var(--brand-15)",
-        border: "1px solid var(--brand-25)",
-        color: "var(--brand-light)",
+        background: "var(--color-bg-secondary)",
+        border: "1px solid var(--color-border-primary)",
+        color: "var(--color-text-primary)",
       }}
     >
       {initials}
@@ -43,17 +43,42 @@ export function Avatar({ name, size = 7 }: { name: string; size?: number }) {
   );
 }
 
+import { useTheme } from "next-themes";
+
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "@/lib/axios";
+
 export default function Sidebar() {
+  const { theme, setTheme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const { sidebarOpen, setSidebarOpen, activeChat, setActiveChat } =
     useWorkspace();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [chatToDelete, setChatToDelete] = useState<string | null>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const { user: storeUser } = useAuthStore();
+  const { user: storeUser, login } = useAuthStore();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
-  const emailPrefix = storeUser?.email ? storeUser.email.split("@")[0] : "User";
+
+  // Hydrate auth store on any page refresh
+  const { data: meData, isSuccess: isMeSuccess } = useQuery({
+    queryKey: ["me"],
+    queryFn: async () => {
+      const res = await apiClient.get("/users/me");
+      return res.data.data;
+    },
+    enabled: !storeUser,
+  });
+
+  useEffect(() => {
+    if (isMeSuccess && meData) {
+      login(meData);
+    }
+  }, [isMeSuccess, meData, login]);
+
+  const rawPrefix = storeUser?.email ? storeUser.email.split("@")[0] : "User";
+  const emailPrefix = rawPrefix.charAt(0).toUpperCase() + rawPrefix.slice(1);
   const user = { name: emailPrefix, email: storeUser?.email || "" };
 
   // Fetch paginated conversation histories using your React Query layer
@@ -65,11 +90,15 @@ export default function Sidebar() {
   // Pull delete mutation controller from your hook layer
   const { deleteConversation, isDeleting } = useConversationMutations();
 
-  const menuItems = [
-    { label: "Dashboard", path: "/dashboard", icon: LayoutDashboardIcon },
-    { label: "User Management", path: "/users", icon: UsersIcon },
-    { label: "Roles Management", path: "/roles", icon: ShieldCheckIcon },
-  ];
+  const isAdmin = storeUser?.role?.role_code?.toLowerCase() === "admin";
+
+  const menuItems = isAdmin
+    ? [
+        { label: "Dashboard", path: "/dashboard", icon: LayoutDashboardIcon },
+        { label: "User Management", path: "/users", icon: UsersIcon },
+        { label: "Roles Management", path: "/roles", icon: ShieldCheckIcon },
+      ]
+    : [];
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -97,18 +126,22 @@ export default function Sidebar() {
     handleNavigation("/chat");
   };
 
-  // Intercept selection triggers and run background database cache invalidation
-  const handleDeleteChatClick = async (
+  // Intercept selection triggers and show confirmation modal
+  const handleDeleteChatClick = (
     e: React.MouseEvent,
     conversationId: string,
   ) => {
     e.stopPropagation(); // Stop navigation click handler from firing
-    if (isDeleting) return;
+    setChatToDelete(conversationId);
+  };
+
+  const confirmDelete = async () => {
+    if (!chatToDelete || isDeleting) return;
 
     try {
-      await deleteConversation(conversationId);
+      await deleteConversation(chatToDelete);
       // Reset workspace hook node if user deleted the active room instance
-      if (activeChat === conversationId) {
+      if (activeChat === chatToDelete) {
         setActiveChat(null);
       }
     } catch (err) {
@@ -116,6 +149,8 @@ export default function Sidebar() {
         "Failed to cleanly delete conversation target resource:",
         err,
       );
+    } finally {
+      setChatToDelete(null);
     }
   };
 
@@ -134,31 +169,26 @@ export default function Sidebar() {
       variants={sidebarVariants}
       animate={sidebarOpen ? "open" : "collapsed"}
       transition={{ duration: 0.22, ease: "easeInOut" }}
-      className="fixed inset-y-0 left-0 lg:relative flex flex-col shrink-0 overflow-hidden h-full z-50 shadow-2xl lg:shadow-none"
-      style={{
-        background: "var(--auth-panel-left)",
-        borderRight: "1px solid var(--auth-edge-line)",
-      }}
+      className="fixed inset-y-0 left-0 lg:relative flex flex-col shrink-0 overflow-hidden h-full z-50 lg:rounded-2xl sidebar-glass"
     >
       {/* SIDEBAR HEADER CONTAINER */}
       <div
         className="flex items-center justify-between px-4 py-4 shrink-0 h-[65px]"
-        style={{ borderBottom: "1px solid var(--auth-edge-line)" }}
+        style={{ borderBottom: "1px solid var(--color-border-primary)" }}
       >
         {sidebarOpen ? (
           <>
             <div className="flex items-center gap-2.5 overflow-hidden">
               <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
                 style={{
-                  background: "var(--brand-12)",
-                  border: "1px solid var(--brand-25)",
+                  background: "var(--gradient-brand)",
                 }}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 16 16">
                   <path
                     d="M2 10 L5 6 L8 10 L11 3 L14 8"
-                    stroke="var(--brand-light)"
+                    stroke="var(--color-primary-foreground)"
                     strokeWidth="1.8"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -167,15 +197,15 @@ export default function Sidebar() {
               </div>
               <span
                 className="text-sm font-semibold text-ellipsis overflow-hidden whitespace-nowrap"
-                style={{ color: "var(--auth-heading)" }}
+                style={{ color: "var(--color-text-primary)" }}
               >
                 EnterpriseIQ
               </span>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="p-1 rounded-md transition-colors hover:opacity-70"
-              style={{ color: "var(--auth-subtext)" }}
+              className="p-1 rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+              style={{ color: "var(--color-text-secondary)" }}
             >
               <PanelLeftClose className="w-4 h-4" />
             </button>
@@ -183,8 +213,8 @@ export default function Sidebar() {
         ) : (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="hidden lg:block mx-auto p-1.5 rounded-md transition-colors hover:opacity-70"
-            style={{ color: "var(--brand-light)" }}
+            className="hidden lg:block mx-auto p-1.5 rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+            style={{ color: "var(--color-text-primary)" }}
           >
             <PanelLeftOpen className="w-5 h-5" />
           </button>
@@ -192,17 +222,12 @@ export default function Sidebar() {
       </div>
 
       {/* CORE ROUTING NAVIGATION BUTTONS */}
-      <div className="px-3 pt-4 space-y-2 flex-1 overflow-y-auto overflow-x-hidden scrollbar-none">
+      <div className="px-3 pt-4 space-y-2 flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin">
         <button
           onClick={handleNewChatInit}
-          className={`w-full flex items-center rounded-lg transition-all duration-150 active:scale-[0.98] ${
+          className={`btn-gradient w-full flex items-center transition-all duration-150 ${
             sidebarOpen ? "px-3 py-2 gap-2 text-sm" : "p-2.5 justify-center"
           }`}
-          style={{
-            background: "var(--brand-10)",
-            border: "1px solid var(--brand-20)",
-            color: "var(--brand-light)",
-          }}
           title="New Chat"
         >
           <Plus className="w-4 h-4 shrink-0" />
@@ -213,114 +238,150 @@ export default function Sidebar() {
 
         {/* RECENT CONVERSATIONS SUB-LIST */}
         <div
-          className="space-y-1 pt-2"
-          style={{ borderTop: "1px solid var(--auth-edge-line)" }}
+          className="space-y-1 pt-4 mt-2"
+          style={{ borderTop: "1px solid var(--color-border-primary)" }}
         >
           {sidebarOpen && (
-            <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground opacity-60 mb-1">
+            <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground opacity-60 mb-2">
               Recent Chats
             </p>
           )}
 
           {isLoading
             ? sidebarOpen && (
-                <p className="px-3 text-xs text-muted-foreground animate-pulse">
-                  Loading histories...
-                </p>
+                <div className="px-3 py-2 space-y-2">
+                  <div className="h-4 w-3/4 rounded bg-gray-200/20 animate-pulse" />
+                  <div className="h-4 w-1/2 rounded bg-gray-200/20 animate-pulse" />
+                </div>
               )
-            : conversationsData?.data?.map((chat) => {
-                const isSelected =
-                  activeChat === chat.id && pathname === "/chat";
-                return (
-                  <div
-                    key={chat.id}
-                    className="group relative flex items-center w-full"
-                  >
-                    <button
-                      onClick={() => selectConversation(chat.id)}
-                      className={`w-full flex items-center rounded-lg transition-all duration-150 ${
-                        sidebarOpen
-                          ? "px-3 py-1.5 pr-8 gap-3 text-xs"
-                          : "p-2.5 justify-center"
-                      }`}
-                      style={{
-                        background: isSelected
-                          ? "var(--brand-12)"
-                          : "transparent",
-                        color: isSelected
-                          ? "var(--brand-light)"
-                          : "var(--auth-subtext)",
-                      }}
-                      title={chat.title}
+            : conversationsData?.data
+                ?.filter((chat: any) => !chat.title.includes("Session #5c5815"))
+                .map((chat) => {
+                  const isSelected =
+                    activeChat === chat.id && pathname === "/chat";
+                  return (
+                    <div
+                      key={chat.id}
+                      className="group relative flex items-center w-full"
                     >
-                      <MessageSquareIcon
-                        className={`w-3.5 h-3.5 shrink-0 ${isSelected ? "text-emerald-500" : ""}`}
-                      />
-                      {sidebarOpen && (
-                        <span className="truncate flex-1 text-left">
-                          {chat.title}
-                        </span>
-                      )}
-                    </button>
-
-                    {/* MINIMAL HOVER DELETE OVERLAY CONTROLLER */}
-                    {sidebarOpen && (
                       <button
-                        onClick={(e) => handleDeleteChatClick(e, chat.id)}
-                        className="absolute right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/10 text-muted-foreground hover:text-red-400 z-10"
-                        title="Delete Conversation"
+                        onClick={() => selectConversation(chat.id)}
+                        className={`w-full flex items-center rounded-xl transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/5 ${
+                          sidebarOpen
+                            ? "px-3 py-2 pr-8 gap-3 text-xs"
+                            : "p-2.5 justify-center"
+                        }`}
+                        style={{
+                          background: isSelected
+                            ? "var(--color-bg-primary)"
+                            : "transparent",
+                          color: isSelected
+                            ? "var(--color-text-primary)"
+                            : "var(--color-text-secondary)",
+                          boxShadow: isSelected ? "var(--shadow-sm)" : "none",
+                          border: isSelected
+                            ? "1px solid var(--color-border-primary)"
+                            : "1px solid transparent",
+                        }}
+                        title={chat.title}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <MessageSquareIcon
+                          className={`w-3.5 h-3.5 shrink-0 ${isSelected ? "text-[var(--color-primary)]" : "opacity-70"}`}
+                        />
+                        {sidebarOpen && (
+                          <span className="truncate flex-1 text-left font-medium">
+                            {chat.title}
+                          </span>
+                        )}
                       </button>
-                    )}
-                  </div>
-                );
-              })}
+
+                      {/* MINIMAL HOVER DELETE OVERLAY CONTROLLER */}
+                      {sidebarOpen && (
+                        <button
+                          onClick={(e) => handleDeleteChatClick(e, chat.id)}
+                          className="absolute right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/10 text-muted-foreground hover:text-red-400 z-10"
+                          title="Delete Conversation"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
         </div>
 
         {/* MANAGEMENT LINK ITEMS */}
-        <div
-          className="space-y-1.5 pt-4"
-          style={{ borderTop: "1px solid var(--auth-edge-line)" }}
-        >
-          {menuItems.map((item) => {
-            const IconComponent = item.icon;
-            const active = pathname === item.path;
+        {menuItems.length > 0 && (
+          <div
+            className="space-y-1.5 pt-4"
+            style={{ borderTop: "1px solid var(--auth-edge-line)" }}
+          >
+            {menuItems.map((item) => {
+              const IconComponent = item.icon;
+              const active = pathname === item.path;
 
-            return (
-              <button
-                key={item.path}
-                onClick={() => handleNavigation(item.path)}
-                className={`w-full flex items-center rounded-lg transition-all duration-150 ${
-                  sidebarOpen
-                    ? "px-3 py-2 gap-3 text-sm"
-                    : "p-2.5 justify-center"
-                }`}
-                style={{
-                  background: active ? "var(--brand-15)" : "transparent",
-                  border: active
-                    ? "1px solid var(--brand-25)"
-                    : "1px solid transparent",
-                  color: active ? "var(--brand-light)" : "var(--auth-subtext)",
-                }}
-                title={item.label}
-              >
-                <IconComponent className="w-4 h-4 shrink-0" />
-                {sidebarOpen && (
-                  <span className="font-medium truncate">{item.label}</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => handleNavigation(item.path)}
+                  className={`w-full flex items-center rounded-lg transition-all duration-150 ${
+                    sidebarOpen
+                      ? "px-3 py-2 gap-3 text-sm"
+                      : "p-2.5 justify-center"
+                  }`}
+                  style={{
+                    background: active
+                      ? "var(--color-bg-secondary)"
+                      : "transparent",
+                    border: "1px solid transparent",
+                    color: active
+                      ? "var(--color-text-primary)"
+                      : "var(--color-text-secondary)",
+                  }}
+                  title={item.label}
+                >
+                  <IconComponent className="w-4 h-4 shrink-0" />
+                  {sidebarOpen && (
+                    <span className="font-medium truncate">{item.label}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* ACCOUNT FOOTER SECTION */}
+      {/* THEME TOGGLE (OUTSIDE PROFILE) */}
+      <div
+        className="px-3 pb-2 pt-2"
+        style={{ borderTop: "1px solid var(--color-border-primary)" }}
+      >
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className={`w-full flex items-center rounded-xl transition-all duration-150 hover:bg-black/5 dark:hover:bg-white/5 ${
+            sidebarOpen ? "px-3 py-2 gap-3" : "p-2 justify-center"
+          }`}
+          style={{ color: "var(--color-text-secondary)" }}
+          title={
+            theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"
+          }
+        >
+          <span className="w-4 h-4 flex items-center justify-center text-[13px]">
+            {theme === "dark" ? "☀️" : "🌙"}
+          </span>
+          {sidebarOpen && (
+            <span className="text-xs font-medium truncate flex-1 text-left">
+              {theme === "dark" ? "Light Mode" : "Dark Mode"}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* ACCOUNT FOOTER SECTION */}
       <div
         ref={profileRef}
         className="relative shrink-0 px-3 py-3"
-        style={{ borderTop: "1px solid var(--auth-edge-line)" }}
+        style={{ borderTop: "1px solid var(--color-border-primary)" }}
       >
         {/* LOGOUT POPOVER — renders above the avatar button */}
         <AnimatePresence>
@@ -330,27 +391,26 @@ export default function Sidebar() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 6, scale: 0.96 }}
               transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute bottom-full left-3 right-3 mb-2 rounded-xl overflow-hidden z-50"
+              className="absolute bottom-[calc(100%+8px)] left-3 right-3 rounded-xl overflow-hidden z-[100] border shadow-xl"
               style={{
-                background: "var(--auth-panel-left)",
-                border: "1px solid var(--auth-edge-line)",
-                boxShadow: "0 -4px 24px rgba(0,0,0,0.35)",
+                background: "var(--color-bg-tertiary)",
+                borderColor: "var(--color-border-primary)",
               }}
             >
               {/* User info row inside popover */}
               <div
                 className="px-4 py-3 border-b"
-                style={{ borderColor: "var(--auth-edge-line)" }}
+                style={{ borderColor: "var(--color-border-primary)" }}
               >
                 <p
                   className="text-xs font-semibold truncate"
-                  style={{ color: "var(--auth-heading)" }}
+                  style={{ color: "var(--color-text-primary)" }}
                 >
                   {user.name}
                 </p>
                 <p
                   className="text-[10px] truncate mt-0.5"
-                  style={{ color: "var(--auth-label)" }}
+                  style={{ color: "var(--color-text-secondary)" }}
                 >
                   {user.email}
                 </p>
@@ -364,7 +424,7 @@ export default function Sidebar() {
                   router.push("/sign-in");
                 }}
                 disabled={isLoggingOut}
-                className="w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium transition-opacity hover:opacity-70 disabled:opacity-40"
+                className="w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-40"
                 style={{ color: "var(--color-danger, #ef4444)" }}
               >
                 {isLoggingOut ? (
@@ -381,15 +441,21 @@ export default function Sidebar() {
         {/* AVATAR TRIGGER BUTTON */}
         <button
           onClick={() => setProfileOpen(!profileOpen)}
-          className={`w-full flex items-center rounded-xl transition-opacity hover:opacity-80 ${
+          className={`w-full flex items-center rounded-xl transition-all hover:bg-black/5 dark:hover:bg-white/5 ${
             sidebarOpen ? "px-3 py-2.5 gap-3" : "p-1.5 justify-center"
           }`}
           style={{
-            background: "var(--brand-4)",
-            border: `1px solid ${profileOpen ? "var(--brand-25)" : "var(--auth-card-border)"}`,
+            background: "transparent",
+            border: `1px solid ${profileOpen ? "var(--color-border-primary)" : "transparent"}`,
           }}
         >
-          <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 bg-emerald-600 text-white">
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm"
+            style={{
+              background: "var(--gradient-brand)",
+              color: "var(--color-primary-foreground)",
+            }}
+          >
             {user.name
               .split(" ")
               .map((w) => w[0])
@@ -401,14 +467,14 @@ export default function Sidebar() {
             <>
               <div className="flex-1 text-left overflow-hidden">
                 <p
-                  className="text-xs font-semibold truncate"
-                  style={{ color: "var(--auth-heading)" }}
+                  className="text-xs font-medium truncate"
+                  style={{ color: "var(--color-text-primary)" }}
                 >
                   {user.name}
                 </p>
                 <p
-                  className="text-[10px] truncate"
-                  style={{ color: "var(--auth-label)" }}
+                  className="text-[10px] truncate opacity-70"
+                  style={{ color: "var(--color-text-secondary)" }}
                 >
                   {user.email}
                 </p>
@@ -420,13 +486,72 @@ export default function Sidebar() {
               >
                 <ChevronDown
                   className="w-3.5 h-3.5"
-                  style={{ color: "var(--auth-subtext)" }}
+                  style={{ color: "var(--color-text-secondary)" }}
                 />
               </motion.div>
             </>
           )}
         </button>
       </div>
+
+      {/* DELETE CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {chatToDelete && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setChatToDelete(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="relative w-full max-w-[320px] p-5 glass-card overflow-hidden"
+            >
+              <h3
+                className="text-base font-semibold mb-2"
+                style={{ color: "var(--color-text-primary)" }}
+              >
+                Delete Chat
+              </h3>
+              <p
+                className="text-sm mb-6"
+                style={{ color: "var(--color-text-secondary)" }}
+              >
+                Are you sure you want to delete this conversation? This action
+                cannot be undone.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setChatToDelete(null)}
+                  disabled={isDeleting}
+                  className="px-4 py-2 text-sm font-medium rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="px-4 py-2 text-sm font-medium rounded-lg flex items-center justify-center min-w-[80px]"
+                  style={{ background: "var(--color-danger)", color: "#fff" }}
+                >
+                  {isDeleting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    "Delete"
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.aside>
   );
 }
