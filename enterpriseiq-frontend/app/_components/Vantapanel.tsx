@@ -12,16 +12,18 @@ export function VantaPanel() {
 
     const getThemeColors = () => {
       const style = getComputedStyle(document.documentElement);
-      const parseHex = (v: string) =>
-        parseInt(style.getPropertyValue(v).trim().replace("#", ""), 16);
+      const parseHex = (v: string, fallback: number) => {
+        const val = style.getPropertyValue(v).trim().replace("#", "");
+        return val ? parseInt(val, 16) : fallback;
+      };
       const isDark = document.documentElement.classList.contains("dark");
       return {
         color: isDark
-          ? parseHex("--brand-vanta")
-          : parseHex("--brand-vanta-lm"),
+          ? parseHex("--color-primary", 0x0a84ff)
+          : parseHex("--color-primary", 0x007aff),
         backgroundColor: isDark
-          ? parseHex("--vanta-bg-dark")
-          : parseHex("--vanta-bg-light"),
+          ? parseHex("--background", 0x000000)
+          : parseHex("--background", 0xf5f5f7),
       };
     };
 

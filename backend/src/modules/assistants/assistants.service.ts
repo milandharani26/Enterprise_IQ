@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Assistant } from './entities/assistant.entity';
 import { CreateAssistantDto } from './dto/create-assistant.dto';
 import { UpdateAssistantDto } from './dto/update-assistant.dto';
@@ -14,6 +15,7 @@ export class AssistantsService {
   constructor(
     @InjectRepository(Assistant)
     private assistantsRepository: Repository<Assistant>,
+    private configService: ConfigService,
   ) {}
 
   async create(createAssistantDto: CreateAssistantDto): Promise<Assistant> {
@@ -52,11 +54,13 @@ export class AssistantsService {
   }
 
   async syncAssistants(): Promise<{ synced: number }> {
-    const apiUrl =
-      process.env.ENTERPRISE_AI_API_URL || 'http://localhost:8000/api/v1';
+    const apiUrl = this.configService.get<string>(
+      'ENTERPRISE_AI_API_URL',
+      'http://localhost:8000/api/v1',
+    );
 
     // In a production environment, pass an authentication token (e.g., Service Account Token)
-    const token = process.env.ENTERPRISE_AI_API_TOKEN || '';
+    const token = this.configService.get<string>('ENTERPRISE_AI_API_TOKEN', '');
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
@@ -92,7 +96,7 @@ export class AssistantsService {
     }
 
     const assistantsFromAI = (await response.json()) as Array<{
-      id: string;
+      assistant_id: string;
       assistant_name: string;
       assistant_code: string;
       system_prompt: string;
@@ -117,16 +121,21 @@ export class AssistantsService {
 
       if (existing) {
         // Update
-        existing.id = remoteAst.id; // Force the ID to sync if it drifted
-        existing.name = remoteAst.assistant_name;
-        existing.config = configPayload;
-        existing.tools = remoteAst.tools;
-        existing.is_active = remoteAst.status === 'enabled';
-        await this.assistantsRepository.save(existing);
+
+        await this.assistantsRepository.update(
+          { assistant_code: assistantCode },
+          {
+            id: remoteAst.assistant_id, // Force the ID to sync if it drifted
+            name: remoteAst.assistant_name,
+            config: configPayload,
+            tools: remoteAst.tools,
+            is_active: remoteAst.status === 'enabled',
+          } as any,
+        );
       } else {
         // Create
         const newAst = this.assistantsRepository.create({
-          id: remoteAst.id, // Set the exact ID from enterpriseiq_ai
+          id: remoteAst.assistant_id, // Set the exact ID from enterpriseiq_ai
           name: remoteAst.assistant_name,
           assistant_code: assistantCode,
           config: configPayload,

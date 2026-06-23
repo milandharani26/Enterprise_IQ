@@ -594,7 +594,10 @@ export default function FilesPage() {
                         style={{ color: "var(--color-text-tertiary)" }}
                       >
                         or{" "}
-                        <span className="gradient-text font-semibold cursor-pointer">
+                        <span
+                          style={{ color: "var(--color-primary)" }}
+                          className="font-semibold cursor-pointer"
+                        >
                           browse files
                         </span>
                       </p>

@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWorkspace } from "@/app/(main)/layout";
 import { Send, Sparkles, ChevronDown, User, Check } from "lucide-react";
+import { toast } from "react-hot-toast";
+import ReactMarkdown from "react-markdown";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/axios";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -171,18 +173,15 @@ export default function ChatPage() {
       <AnimatePresence>
         {dropdownOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className={`absolute right-2 w-56 rounded-xl border p-1 z-[999] shadow-2xl max-h-60 overflow-y-auto scrollbar-thin ${isNewConversation ? "top-full mt-2" : "bottom-full mb-2"}`}
+            className="absolute bottom-full right-2 mb-2 w-56 rounded-xl border p-1 z-[999] max-h-60 overflow-y-auto scrollbar-thin"
             style={{
               background: "var(--color-bg-elevated)",
-              backgroundColor: "rgba(20, 20, 25, 0.85)",
-              backdropFilter: "blur(24px)",
-              WebkitBackdropFilter: "blur(24px)",
-              borderColor: "var(--color-border-tertiary)",
-              boxShadow: "0 12px 40px rgba(0, 0, 0, 0.6), var(--shadow-md)",
+              borderColor: "var(--color-border-primary)",
+              boxShadow: "var(--shadow-md)",
             }}
           >
             <div
@@ -238,100 +237,80 @@ export default function ChatPage() {
 
   // ── Shared input box ──
   const renderInputBox = () => (
-    <div className="input-glow-wrap">
-      <div className="chat-input-border">
-        <div
-          className="relative overflow-visible group"
-          style={{
-            background: "var(--color-bg-elevated)",
-            borderRadius: "1rem",
-            boxShadow: "var(--shadow-md)",
-          }}
-        >
-          <div
-            className="absolute inset-0 pointer-events-none opacity-10 group-focus-within:opacity-25 rounded-2xl"
+    <div className="w-full">
+      <div
+        className="relative overflow-visible group transition-all duration-300 glass-panel"
+        style={{
+          borderRadius: "1.25rem",
+        }}
+      >
+        <div className="relative z-10">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isSending}
+            placeholder={
+              selectedAssistant
+                ? `Message ${selectedAssistant.name}…`
+                : "Ask EnterpriseIQ anything…"
+            }
+            rows={1}
+            className="w-full px-5 pt-4 pb-2 text-sm resize-none bg-transparent outline-none leading-relaxed disabled:opacity-60"
             style={{
-              backgroundImage: "var(--gradient-brand)",
-              mixBlendMode: "plus-lighter",
-              transition: "opacity 350ms ease",
+              color: "var(--color-text-primary)",
+              minHeight: 52,
+              maxHeight: 160,
+              caretColor: "var(--color-primary)",
             }}
           />
-          <div
-            className="absolute top-0 left-10 right-10 h-px pointer-events-none opacity-60 group-focus-within:opacity-100"
-            style={{
-              background:
-                "linear-gradient(90deg, transparent, var(--color-primary), transparent)",
-              transition: "opacity 350ms ease",
-            }}
-          />
-          <div className="relative z-10">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isSending}
-              placeholder={
-                selectedAssistant
-                  ? `Message ${selectedAssistant.name}…`
-                  : "Ask EnterpriseIQ anything…"
-              }
-              rows={1}
-              className="w-full px-5 pt-4 pb-2 text-sm resize-none bg-transparent outline-none leading-relaxed disabled:opacity-60"
-              style={{
-                color: "var(--color-text-primary)",
-                minHeight: 52,
-                maxHeight: 160,
-                caretColor: "var(--color-primary)",
-              }}
-            />
-            <div className="flex items-center justify-between px-5 pb-3 pt-1">
-              <p
-                className="text-[11px]"
-                style={{ color: "var(--color-text-tertiary)" }}
+          <div className="flex items-center justify-between px-5 pb-3 pt-1">
+            <p
+              className="text-[11px]"
+              style={{ color: "var(--color-text-tertiary)" }}
+            >
+              <kbd
+                className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                style={{
+                  background: "var(--color-bg-secondary)",
+                  border: "1px solid var(--color-border-secondary)",
+                }}
               >
-                <kbd
-                  className="px-1.5 py-0.5 rounded text-[10px] font-medium"
-                  style={{
-                    background: "var(--color-bg-secondary)",
-                    border: "1px solid var(--color-border-secondary)",
-                  }}
-                >
-                  Enter
-                </kbd>{" "}
-                to send ·{" "}
-                <kbd
-                  className="px-1.5 py-0.5 rounded text-[10px] font-medium"
-                  style={{
-                    background: "var(--color-bg-secondary)",
-                    border: "1px solid var(--color-border-secondary)",
-                  }}
-                >
-                  Shift+Enter
-                </kbd>{" "}
-                new line
-              </p>
-              <div className="flex items-center">
-                {renderAssistantDropdown()}
-                <motion.button
-                  onClick={handleSendMessage}
-                  disabled={!input.trim() || isSending}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 disabled:opacity-20"
-                  style={{
-                    background: input.trim()
-                      ? "var(--gradient-brand)"
-                      : "var(--color-bg-secondary)",
-                    boxShadow: input.trim() ? "var(--shadow-glow)" : "none",
-                    color: input.trim()
-                      ? "#ffffff"
-                      : "var(--color-text-tertiary)",
-                  }}
-                >
-                  <Send className="w-3.5 h-3.5" />
-                </motion.button>
-              </div>
+                Enter
+              </kbd>{" "}
+              to send ·{" "}
+              <kbd
+                className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                style={{
+                  background: "var(--color-bg-secondary)",
+                  border: "1px solid var(--color-border-secondary)",
+                }}
+              >
+                Shift+Enter
+              </kbd>{" "}
+              new line
+            </p>
+            <div className="flex items-center">
+              {renderAssistantDropdown()}
+              <motion.button
+                onClick={handleSendMessage}
+                disabled={!input.trim() || isSending}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 disabled:opacity-20"
+                style={{
+                  background: input.trim()
+                    ? "var(--gradient-brand)"
+                    : "var(--color-bg-secondary)",
+                  boxShadow: input.trim() ? "var(--shadow-glow)" : "none",
+                  color: input.trim()
+                    ? "#ffffff"
+                    : "var(--color-text-tertiary)",
+                }}
+              >
+                <Send className="w-3.5 h-3.5" />
+              </motion.button>
             </div>
           </div>
         </div>
@@ -354,11 +333,6 @@ export default function ChatPage() {
             ? conversationDetails?.title || "Active Session"
             : "New Chat"}
         </span>
-        {activeChat && (
-          <span className="ml-2 text-[11px] px-2 py-0.5 rounded-full font-medium badge-info">
-            Session #{activeChat.slice(-6)}
-          </span>
-        )}
       </div>
 
       {/* ══════════════════════════════════════════
@@ -371,14 +345,19 @@ export default function ChatPage() {
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              className="relative mb-5"
+              className="relative mb-6 flex justify-center"
             >
               <div
-                className="absolute inset-0 rounded-3xl blur-2xl opacity-50 scale-[1.6]"
-                style={{ background: "var(--gradient-brand)" }}
-              />
-              <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center btn-gradient shadow-lg">
-                <Sparkles className="w-6 h-6 text-white" />
+                className="w-16 h-16 rounded-3xl flex items-center justify-center shadow-sm"
+                style={{
+                  background: "var(--color-bg-elevated)",
+                  border: "1px solid var(--color-border-primary)",
+                }}
+              >
+                <Sparkles
+                  className="w-8 h-8"
+                  style={{ color: "var(--color-primary)" }}
+                />
               </div>
             </motion.div>
 
@@ -393,10 +372,10 @@ export default function ChatPage() {
               className="text-center mb-2"
             >
               <h2
-                className="text-[28px] font-bold tracking-tight leading-tight"
+                className="text-3xl font-bold tracking-tight"
                 style={{ color: "var(--color-text-primary)" }}
               >
-                How can I <span className="gradient-text">help you?</span>
+                How can I help you today?
               </h2>
             </motion.div>
 
@@ -408,7 +387,7 @@ export default function ChatPage() {
                 delay: 0.13,
                 ease: [0.22, 1, 0.36, 1],
               }}
-              className="text-sm text-center mb-7 max-w-sm"
+              className="text-sm text-center mb-10 max-w-sm"
               style={{ color: "var(--color-text-tertiary)" }}
             >
               Ask anything about your enterprise data, workflows, or
@@ -423,7 +402,7 @@ export default function ChatPage() {
                 delay: 0.18,
                 ease: [0.22, 1, 0.36, 1],
               }}
-              className="flex flex-wrap gap-2 justify-center mb-10 max-w-2xl"
+              className="flex flex-wrap gap-3 justify-center mb-12 max-w-2xl"
             >
               {SUGGESTIONS.map((s, i) => (
                 <motion.button
@@ -436,13 +415,9 @@ export default function ChatPage() {
                     ease: [0.22, 1, 0.36, 1],
                   }}
                   onClick={() => handleSuggestion(s)}
-                  className="px-4 py-2 text-sm font-medium rounded-xl cursor-pointer transition-all duration-150 hover:opacity-80 active:scale-[0.98]"
+                  className="px-5 py-2.5 text-sm font-medium rounded-full cursor-pointer glass-card glass-card-hover"
                   style={{
-                    background: "var(--color-bg-primary)",
-                    backdropFilter: "blur(12px)",
-                    border: "1px solid var(--color-border-secondary)",
                     color: "var(--color-text-secondary)",
-                    boxShadow: "var(--shadow-sm)",
                   }}
                 >
                   {s}
@@ -458,12 +433,12 @@ export default function ChatPage() {
                 delay: 0.25,
                 ease: [0.22, 1, 0.36, 1],
               }}
-              className="w-full"
+              className="w-full absolute bottom-8 left-0 right-0 z-10 px-4"
             >
-              <div className="w-full max-w-3xl mx-auto px-4">
+              <div className="w-full max-w-3xl mx-auto">
                 {renderInputBox()}
                 <p
-                  className="text-center text-[11px] mt-2"
+                  className="text-center text-[11px] mt-3"
                   style={{ color: "var(--color-text-tertiary)" }}
                 >
                   EnterpriseIQ can make mistakes. Verify important information.
@@ -492,31 +467,59 @@ export default function ChatPage() {
                     className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                   >
                     {msg.role === "assistant" && (
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 btn-gradient">
-                        <Sparkles className="w-3.5 h-3.5 text-white" />
+                      <div
+                        className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+                        style={{
+                          background: "var(--color-bg-secondary)",
+                          border: "1px solid var(--color-border-primary)",
+                        }}
+                      >
+                        <Sparkles
+                          className="w-3.5 h-3.5"
+                          style={{ color: "var(--color-text-secondary)" }}
+                        />
                       </div>
                     )}
                     <div
-                      className="rounded-2xl px-4 py-3 text-sm leading-relaxed max-w-[75%] whitespace-pre-wrap"
+                      className="px-5 py-3.5 text-[15px] leading-relaxed max-w-[80%] whitespace-pre-wrap"
                       style={
                         msg.role === "user"
                           ? {
-                              background: "var(--gradient-brand)",
-                              color: "#ffffff",
-                              borderRadius: "16px 16px 4px 16px",
-                              boxShadow: "var(--shadow-md)",
+                              background: "var(--color-primary)",
+                              color: "var(--color-primary-foreground)",
+                              borderRadius: "24px 24px 8px 24px",
+                              boxShadow: "var(--shadow-sm)",
                             }
                           : {
                               background: "var(--color-bg-primary)",
-                              backdropFilter: "blur(16px)",
-                              border: "1px solid var(--color-border-tertiary)",
+                              border: "1px solid var(--color-border-primary)",
                               color: "var(--color-text-primary)",
-                              borderRadius: "16px 16px 16px 4px",
-                              boxShadow: "var(--shadow-sm)",
+                              borderRadius: "24px 24px 24px 8px",
+                              boxShadow: "var(--shadow-md)",
+                              backdropFilter: "blur(24px) saturate(180%)",
+                              WebkitBackdropFilter: "blur(24px) saturate(180%)",
                             }
                       }
                     >
-                      {msg.content}
+                      {msg.role === "assistant" ? (
+                        <div className="prose prose-invert prose-sm max-w-none break-words [&>p:last-child]:mb-0 [&>p:first-child]:mt-0 [&_a]:text-blue-400 [&_a:hover]:text-blue-300 [&_a]:underline [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:my-2 [&_li]:mb-1 [&_strong]:font-semibold [&_strong]:text-white">
+                          <ReactMarkdown
+                            components={{
+                              a: ({ node, ...props }) => (
+                                <a
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  {...props}
+                                />
+                              ),
+                            }}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        msg.content
+                      )}
                     </div>
                   </motion.div>
                 ))}
@@ -531,12 +534,27 @@ export default function ChatPage() {
                     exit={{ opacity: 0 }}
                     className="flex gap-3 items-start"
                   >
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 btn-gradient">
-                      <Sparkles className="w-3.5 h-3.5 text-white" />
+                    <div
+                      className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                      style={{
+                        background: "var(--color-bg-elevated)",
+                        border: "1px solid var(--color-border-primary)",
+                      }}
+                    >
+                      <Sparkles
+                        className="w-4 h-4"
+                        style={{ color: "var(--color-primary)" }}
+                      />
                     </div>
                     <div
-                      className="glass-card px-4 py-3.5 flex items-center gap-1.5"
-                      style={{ borderRadius: "16px 16px 16px 4px" }}
+                      className="px-5 py-4 flex items-center gap-1.5"
+                      style={{
+                        background: "var(--color-bg-primary)",
+                        border: "1px solid var(--color-border-primary)",
+                        boxShadow: "var(--shadow-md)",
+                        borderRadius: "24px 24px 24px 8px",
+                        backdropFilter: "blur(24px) saturate(180%)",
+                      }}
                     >
                       {[0, 1, 2].map((i) => (
                         <div
@@ -558,11 +576,11 @@ export default function ChatPage() {
           </div>
 
           {/* Pinned input footer */}
-          <div className="shrink-0 pb-5 pt-2">
+          <div className="shrink-0 pb-6 pt-2 bg-gradient-to-t from-[var(--color-bg-tertiary)] to-transparent relative z-20">
             <div className="w-full max-w-3xl mx-auto px-4">
               {renderInputBox()}
               <p
-                className="text-center text-[11px] mt-2"
+                className="text-center text-[11px] mt-3"
                 style={{ color: "var(--color-text-tertiary)" }}
               >
                 EnterpriseIQ can make mistakes. Verify important information.
