@@ -121,28 +121,24 @@ export class ConversationsService {
     // 2. Call your FastAPI Admin Backend to generate the response
     let assistantContent = 'AI response placeholder';
     try {
-      const adminBackendUrl =
-        process.env.ADMIN_BACKEND_URL || 'http://localhost:8000';
-      const serviceToken = process.env.SERVICE_TOKEN || 'your-signed-jwt-token';
+      const adminBackendUrl = process.env.ENTERPRISE_AI_API_URL;
+      const serviceToken = process.env.ENTERPRISE_AI_API_TOKEN;
 
-      const response = await fetch(
-        `${adminBackendUrl}/api/v1/conversations/chat`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            // Passing the token containing the organization_id!
-            Authorization: `Bearer ${serviceToken}`,
-          },
-          body: JSON.stringify({
-            conversation_id: id,
-            user_id: userId,
-            agent_id: conversation.agent_id,
-            // Notice: organization_id is no longer needed in the body
-            content: sendMessageDto.content,
-          }),
+      const response = await fetch(`${adminBackendUrl}/conversations/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Passing the token containing the organization_id!
+          Authorization: `Bearer ${serviceToken}`,
         },
-      );
+        body: JSON.stringify({
+          conversation_id: id,
+          user_id: userId,
+          agent_id: conversation.agent_id,
+          // Notice: organization_id is no longer needed in the body
+          content: sendMessageDto.content,
+        }),
+      });
 
       if (!response.ok) {
         throw new Error(

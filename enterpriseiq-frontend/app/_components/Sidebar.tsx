@@ -56,7 +56,12 @@ export default function Sidebar() {
     useWorkspace();
   const [profileOpen, setProfileOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { user: storeUser, login } = useAuthStore();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
@@ -363,15 +368,23 @@ export default function Sidebar() {
           }`}
           style={{ color: "var(--color-text-secondary)" }}
           title={
-            theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"
+            !mounted
+              ? "Switch Mode"
+              : theme === "dark"
+                ? "Switch to Light Mode"
+                : "Switch to Dark Mode"
           }
         >
           <span className="w-4 h-4 flex items-center justify-center text-[13px]">
-            {theme === "dark" ? "☀️" : "🌙"}
+            {!mounted ? "🌙" : theme === "dark" ? "☀️" : "🌙"}
           </span>
           {sidebarOpen && (
             <span className="text-xs font-medium truncate flex-1 text-left">
-              {theme === "dark" ? "Light Mode" : "Dark Mode"}
+              {!mounted
+                ? "Theme"
+                : theme === "dark"
+                  ? "Light Mode"
+                  : "Dark Mode"}
             </span>
           )}
         </button>
