@@ -6,6 +6,7 @@ import { useWorkspace } from "@/app/(main)/layout";
 import { Send, Sparkles, ChevronDown, User, Check } from "lucide-react";
 import { toast } from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/axios";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -500,8 +501,9 @@ export default function ChatPage() {
                       }
                     >
                       {msg.role === "assistant" ? (
-                        <div className="prose prose-invert prose-sm max-w-none break-words [&>p:last-child]:mb-0 [&>p:first-child]:mt-0 [&_a]:text-blue-400 [&_a:hover]:text-blue-300 [&_a]:underline [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:my-2 [&_li]:mb-1 [&_strong]:font-semibold [&_strong]:text-white">
+                        <div className="prose prose-invert prose-sm max-w-none break-words [&>p:last-child]:mb-0 [&>p:first-child]:mt-0 [&_a]:text-blue-400 [&_a:hover]:text-blue-300 [&_a]:underline [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:my-2 [&_li]:mb-1 [&_strong]:font-semibold [&_strong]:text-white [&_table]:w-full [&_table]:my-4 [&_table]:border-collapse [&_th]:border [&_th]:border-[var(--color-border-primary)] [&_th]:bg-black/20 [&_th]:px-4 [&_th]:py-2 [&_td]:border [&_td]:border-[var(--color-border-primary)] [&_td]:px-4 [&_td]:py-2">
                           <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
                             components={{
                               a: ({ node, ...props }) => (
                                 <a
