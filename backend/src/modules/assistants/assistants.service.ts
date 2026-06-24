@@ -9,12 +9,15 @@ import { ConfigService } from '@nestjs/config';
 import { Assistant } from './entities/assistant.entity';
 import { CreateAssistantDto } from './dto/create-assistant.dto';
 import { UpdateAssistantDto } from './dto/update-assistant.dto';
+import { Role } from '../roles/entities/role.entity';
 
 @Injectable()
 export class AssistantsService {
   constructor(
     @InjectRepository(Assistant)
     private assistantsRepository: Repository<Assistant>,
+    @InjectRepository(Role)
+    private rolesRepository: Repository<Role>,
     private configService: ConfigService,
   ) {}
 
@@ -53,13 +56,12 @@ export class AssistantsService {
     await this.assistantsRepository.remove(assistant);
   }
 
-  async syncAssistants(): Promise<{ synced: number }> {
+  async syncAssistants(): Promise<{ added: string[]; deleted: string[] }> {
     const apiUrl = this.configService.get<string>(
       'ENTERPRISE_AI_API_URL',
       'http://localhost:8000/api/v1',
     );
 
-    // In a production environment, pass an authentication token (e.g., Service Account Token)
     const token = this.configService.get<string>('ENTERPRISE_AI_API_TOKEN', '');
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -105,48 +107,90 @@ export class AssistantsService {
       tools: unknown;
       status: string;
     }>;
-    let syncedCount = 0;
 
-    for (const remoteAst of assistantsFromAI) {
-      const assistantCode = remoteAst.assistant_code;
-      const existing = await this.assistantsRepository.findOne({
-        where: { assistant_code: assistantCode },
-      });
+    const localAssistants = await this.assistantsRepository.find();
+    const localCodeSet = new Set(localAssistants.map((a) => a.assistant_code));
+    const remoteCodeSet = new Set(
+      assistantsFromAI.map((a) => a.assistant_code),
+    );
 
+    const toAdd = assistantsFromAI.filter(
+      (a) => !localCodeSet.has(a.assistant_code),
+    );
+    const toDelete = localAssistants.filter(
+      (a) => !remoteCodeSet.has(a.assistant_code),
+    );
+    const toUpdate = assistantsFromAI.filter((a) =>
+      localCodeSet.has(a.assistant_code),
+    );
+
+    const added: string[] = [];
+    const deleted: string[] = [];
+
+    for (const remoteAst of toAdd) {
       const configPayload = {
         system_prompt: remoteAst.system_prompt,
         type: remoteAst.type,
         guardrails: remoteAst.guardrails,
       };
 
-      if (existing) {
-        // Update
+      const newAst = this.assistantsRepository.create({
+        id: remoteAst.assistant_id,
+        name: remoteAst.assistant_name,
+        assistant_code: remoteAst.assistant_code,
+        config: configPayload,
+        tools: remoteAst.tools,
+        is_active: remoteAst.status === 'enabled',
+      });
+      await this.assistantsRepository.save(newAst);
+      added.push(remoteAst.assistant_name);
 
-        await this.assistantsRepository.update(
-          { assistant_code: assistantCode },
-          {
-            id: remoteAst.assistant_id, // Force the ID to sync if it drifted
-            name: remoteAst.assistant_name,
-            config: configPayload,
-            tools: remoteAst.tools,
-            is_active: remoteAst.status === 'enabled',
-          } as any,
-        );
-      } else {
-        // Create
-        const newAst = this.assistantsRepository.create({
-          id: remoteAst.assistant_id, // Set the exact ID from enterpriseiq_ai
+      const adminRole = await this.rolesRepository.findOne({
+        where: { role_code: 'admin' },
+      });
+      if (adminRole) {
+        adminRole.assistant_ids = [
+          ...(adminRole.assistant_ids ?? []),
+          remoteAst.assistant_id,
+        ];
+        await this.rolesRepository.save(adminRole);
+      }
+    }
+
+    for (const remoteAst of toUpdate) {
+      const configPayload = {
+        system_prompt: remoteAst.system_prompt,
+        type: remoteAst.type,
+        guardrails: remoteAst.guardrails,
+      };
+
+      await this.assistantsRepository.update(
+        { assistant_code: remoteAst.assistant_code },
+        {
+          id: remoteAst.assistant_id,
           name: remoteAst.assistant_name,
-          assistant_code: assistantCode,
           config: configPayload,
           tools: remoteAst.tools,
           is_active: remoteAst.status === 'enabled',
-        });
-        await this.assistantsRepository.save(newAst);
-      }
-      syncedCount++;
+        } as any,
+      );
     }
 
-    return { synced: syncedCount };
+    for (const assistant of toDelete) {
+      const rolesWithAssistant = await this.rolesRepository.find();
+      for (const role of rolesWithAssistant) {
+        if (role.assistant_ids && role.assistant_ids.includes(assistant.id)) {
+          role.assistant_ids = role.assistant_ids.filter(
+            (id) => id !== assistant.id,
+          );
+          await this.rolesRepository.save(role);
+        }
+      }
+
+      await this.assistantsRepository.delete(assistant.id);
+      deleted.push(assistant.name);
+    }
+
+    return { added, deleted };
   }
 }

@@ -20,6 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import { assistantService } from "@/services/assistantService";
 import { useEditUserRoleMutation } from "@/hooks/mutations/useRoleMutation";
 import { Role as ApiRole } from "@/types/role";
+import { toast } from "react-hot-toast";
 
 // Helper to determine role colors dynamically based on code or name
 const getRoleColor = (roleCode: string) => {
@@ -90,11 +91,22 @@ export default function RolesPage() {
   const handleSyncAssistants = async () => {
     try {
       setIsSyncing(true);
-      await assistantService.syncAssistants();
+      const result = await assistantService.syncAssistants();
+
+      const messages = [];
+      if (result.added?.length > 0)
+        messages.push(`Added: ${result.added.join(", ")}`);
+      if (result.deleted?.length > 0)
+        messages.push(`Removed: ${result.deleted.join(", ")}`);
+      if (messages.length === 0)
+        messages.push("Assistants are already up to date.");
+
+      toast.success(messages.join(" | "));
+
       await refetchAssistants();
     } catch (error) {
       console.error("Failed to sync assistants", error);
-      alert("Failed to sync assistants.");
+      toast.error("Sync failed");
     } finally {
       setIsSyncing(false);
     }
