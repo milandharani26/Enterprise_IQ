@@ -13,6 +13,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { getRoleWithAssistantById } from "@/hooks/queries/useRoleQueries";
 import { useConversationDetails } from "@/hooks/queries/useConversationQueries";
 import { useConversationMutations } from "@/hooks/mutations/useConversationMutation";
+import { useQueryClient } from "@tanstack/react-query";
 import { assistant as AssistantType } from "@/types/assistants";
 
 interface Message {
@@ -49,12 +50,22 @@ export default function ChatPage() {
     getRoleWithAssistantById(user?.role_id || "");
 
   // ── Fetch conversation messages for active chat ──
-  const { data: conversationDetails, isLoading: loadingChatDetails } =
-    useConversationDetails(activeChat || "");
+  const {
+    data: conversationDetails,
+    isLoading: loadingChatDetails,
+    isRefetching,
+  } = useConversationDetails(activeChat || "");
+
+  useEffect(() => {
+    if (isRefetching) {
+      console.log("[VERIFY] Conversation-details query refetched");
+    }
+  }, [isRefetching]);
 
   // ── Mutation methods ──
   const { createConversation, sendMessage, isSending } =
     useConversationMutations();
+  const queryClient = useQueryClient();
 
   // ── Fetch /me if user not in store ──
   const { data: meData, isSuccess: isMeSuccess } = useQuery({
@@ -112,6 +123,13 @@ export default function ChatPage() {
 
   const messages: Message[] = conversationDetails?.messages ?? [];
 
+  console.log("[VERIFY] Messages rendered", {
+    activeChat,
+    messageCount: messages.length,
+    loading: loadingChatDetails,
+    showEmpty: messages.length === 0 && !loadingChatDetails,
+  });
+
   const isNewConversation = !activeChat && messages.length === 0;
 
   const handleSendMessage = async () => {
@@ -124,15 +142,29 @@ export default function ChatPage() {
       let currentChatId = activeChat;
 
       if (!currentChatId) {
+        console.log("[VERIFY] New Chat clicked / first message");
         const created = await createConversation({
           title: text.length > 26 ? `${text.slice(0, 25)}...` : text,
           agentId: selectedAssistant?.id,
         });
+        console.log("[VERIFY] Conversation created, ID:", created.id);
         currentChatId = created.id;
         setActiveChat(currentChatId);
+        console.log("[VERIFY] Active conversation updated");
       }
 
+      const cacheBeforeSend = queryClient.getQueryData([
+        "conversation-details",
+        currentChatId,
+      ]);
+      console.log(
+        "[VERIFY] Conversation-details cache exists?",
+        !!cacheBeforeSend,
+        cacheBeforeSend ? `messages:${cacheBeforeSend.messages?.length}` : "no",
+      );
+
       await sendMessage({ id: currentChatId, content: text });
+      console.log("[VERIFY] Assistant reply received");
     } catch (err) {
       console.error("Failed to route core message pipeline invocation:", err);
     }

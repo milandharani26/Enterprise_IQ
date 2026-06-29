@@ -4,9 +4,6 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Bot,
-  Plus,
-  Edit2,
-  Trash2,
   Check,
   AlertTriangle,
   Lock,
@@ -16,7 +13,7 @@ import {
 
 // Hook and Type Imports
 import { getAllRoles } from "@/hooks/queries/useRoleQueries";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { assistantService } from "@/services/assistantService";
 import { useEditUserRoleMutation } from "@/hooks/mutations/useRoleMutation";
 import { Role as ApiRole } from "@/types/role";
@@ -66,6 +63,8 @@ function Toggle({
 }
 
 export default function RolesPage() {
+  const queryClient = useQueryClient();
+
   // Fetching dynamic role data via React Query
   const {
     data: dynamicRoles,
@@ -93,6 +92,8 @@ export default function RolesPage() {
       setIsSyncing(true);
       const result = await assistantService.syncAssistants();
 
+      console.log("[VERIFY] Sync completed", result);
+
       const messages = [];
       if (result.added?.length > 0)
         messages.push(`Added: ${result.added.join(", ")}`);
@@ -104,6 +105,8 @@ export default function RolesPage() {
       toast.success(messages.join(" | "));
 
       await refetchAssistants();
+      // Refresh roles so the summary bar picks up updated assistant_ids (e.g. admin auto-assigned new assistants)
+      queryClient.invalidateQueries({ queryKey: ["all-roles"] });
     } catch (error) {
       console.error("Failed to sync assistants", error);
       toast.error("Sync failed");
@@ -179,7 +182,11 @@ export default function RolesPage() {
   }
 
   const totalAssistantsCount = backendAssistants?.length || 0;
-  const activeCount = selectedRole?.assistant_ids?.length || 0; // length still works, no change needed
+  const activeCount = selectedRole?.assistant_ids?.length || 0;
+
+  console.log("[VERIFY] Assistant list count:", totalAssistantsCount);
+  console.log("[VERIFY] Selected assistant ids:", activeCount);
+  console.log("[VERIFY] Selected count:", activeCount);
   const handleToggleAssistant = (assistantId: string) => {
     if (!selectedRole) return;
 
@@ -252,9 +259,6 @@ export default function RolesPage() {
               className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`}
             />
             {isSyncing ? "Syncing..." : "Sync Assistants"}
-          </button>
-          <button className="btn-gradient px-4 py-2.5 text-sm rounded-xl flex items-center gap-2">
-            <Plus className="w-4 h-4" /> Create Role
           </button>
         </div>
       </motion.div>
@@ -330,22 +334,6 @@ export default function RolesPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-1 shrink-0">
-                    <button
-                      className="p-1.5 rounded-lg hover:opacity-70 transition-opacity"
-                      style={{ color: "var(--color-text-tertiary)" }}
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </button>
-                    {role.role_code?.toLowerCase() !== "admin" && (
-                      <button
-                        className="p-1.5 rounded-lg hover:opacity-70 transition-opacity"
-                        style={{ color: "var(--color-danger)" }}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
                 </div>
 
                 {/* Assistant allocation summary bar */}
@@ -358,6 +346,13 @@ export default function RolesPage() {
                       className="font-semibold"
                       style={{ color: roleColor }}
                     >
+                      {(() => {
+                        console.log(
+                          "[VERIFY] Summary rendered:",
+                          `${count}/${totalAssistantsCount}`,
+                        );
+                        return null;
+                      })()}
                       {count}/{totalAssistantsCount}
                     </span>
                   </div>
