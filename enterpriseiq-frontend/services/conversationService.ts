@@ -78,11 +78,14 @@ export const conversationService = {
   sendMessage: async (
     id: string,
     content: string,
+    agentId?: string,
   ): Promise<SendMessageResponse> => {
+    console.log("[VERIFY] Payload Assistant:", agentId || "not provided");
     const response = await apiClient.post<ApiResponse<SendMessageResponse>>(
       `/conversations/${id}/messages`,
       {
         content,
+        agentId,
       },
     );
     return response.data.data;

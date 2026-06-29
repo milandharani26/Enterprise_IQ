@@ -8,16 +8,28 @@ export function useConversationMutations() {
   const createConversationMutation = useMutation({
     mutationFn: ({ title, agentId }: { title: string; agentId?: string }) =>
       conversationService.createConversation(title, agentId),
-    onSuccess: () => {
-      // Refresh sidebar list immediately
+    onSuccess: (data) => {
+      // Immediately initialise conversation-details cache so optimistic updates work
+      queryClient.setQueryData(["conversation-details", data.id], {
+        ...data,
+        messages: [],
+      });
+      // Refresh sidebar list in background
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
 
   // 2. Append user message and await automated AI reply stream
   const sendMessageMutation = useMutation({
-    mutationFn: ({ id, content }: { id: string; content: string }) =>
-      conversationService.sendMessage(id, content),
+    mutationFn: ({
+      id,
+      content,
+      agentId,
+    }: {
+      id: string;
+      content: string;
+      agentId?: string;
+    }) => conversationService.sendMessage(id, content, agentId),
     onMutate: async (variables) => {
       // Cancel any outgoing refetches so they don't overwrite optimistic update
       await queryClient.cancelQueries({
@@ -34,11 +46,11 @@ export function useConversationMutations() {
       queryClient.setQueryData(
         ["conversation-details", variables.id],
         (old: any) => {
-          if (!old) return old;
+          const base = old || { id: variables.id, messages: [] };
           return {
-            ...old,
+            ...base,
             messages: [
-              ...(old.messages || []),
+              ...(base.messages || []),
               {
                 id: `optimistic-${Date.now()}`,
                 conversation_id: variables.id,
@@ -61,10 +73,40 @@ export function useConversationMutations() {
           ["conversation-details", variables.id],
           context.previousDetails,
         );
+      } else {
+        // Remove optimistic messages if no previous cache existed
+        queryClient.setQueryData(
+          ["conversation-details", variables.id],
+          (old: any) => {
+            if (!old) return old;
+            return {
+              ...old,
+              messages: (old.messages || []).filter(
+                (m: any) => !m.id?.startsWith("optimistic-"),
+              ),
+            };
+          },
+        );
       }
     },
     onSettled: (data, error, variables) => {
-      // Invalidate both the target chat messages and the general history order list
+      // Immediately insert server response, replacing optimistic message
+      if (data) {
+        queryClient.setQueryData(
+          ["conversation-details", variables.id],
+          (old: any) => {
+            const base = old || { id: variables.id, messages: [] };
+            const filtered = (base.messages || []).filter(
+              (m: any) => !m.id?.startsWith("optimistic-"),
+            );
+            return {
+              ...base,
+              messages: [...filtered, data.userMessage, data.assistantMessage],
+            };
+          },
+        );
+      }
+      // Background refetch to ensure consistency
       queryClient.invalidateQueries({
         queryKey: ["conversation-details", variables.id],
       });
