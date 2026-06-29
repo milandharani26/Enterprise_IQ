@@ -118,7 +118,30 @@ export class ConversationsService {
     });
     await this.messageRepository.save(userMessage);
 
-    // 2. Call your FastAPI Admin Backend to generate the response
+    // 2. Determine which agent/assistant to use
+    const resolvedAgentId = sendMessageDto.agentId || conversation.agent_id;
+
+    console.log(
+      '[VERIFY] Backend received agentId in payload:',
+      sendMessageDto.agentId,
+    );
+    console.log(
+      '[VERIFY] Backend stored conversation.agent_id:',
+      conversation.agent_id,
+    );
+    console.log('[VERIFY] Backend resolved agent_id for LLM:', resolvedAgentId);
+
+    // Persist the new agent_id on the conversation record for future messages
+    if (
+      sendMessageDto.agentId &&
+      sendMessageDto.agentId !== conversation.agent_id
+    ) {
+      await this.conversationRepository.update(id, {
+        agent_id: sendMessageDto.agentId,
+      });
+    }
+
+    // 3. Call your FastAPI Admin Backend to generate the response
     let assistantContent = 'AI response placeholder';
     try {
       const adminBackendUrl = process.env.ENTERPRISE_AI_API_URL;
@@ -134,7 +157,7 @@ export class ConversationsService {
         body: JSON.stringify({
           conversation_id: id,
           user_id: userId,
-          agent_id: conversation.agent_id,
+          agent_id: resolvedAgentId,
           // Notice: organization_id is no longer needed in the body
           content: sendMessageDto.content,
         }),
@@ -155,7 +178,7 @@ export class ConversationsService {
       assistantContent = 'Sorry, the AI engine is currently unavailable.';
     }
 
-    // 3. Create assistant message locally in NestJS using the AI response
+    // 4. Create assistant message locally in NestJS using the AI response
     const assistantMessage = this.messageRepository.create({
       conversation_id: id,
       role: MessageRole.ASSISTANT,

@@ -21,8 +21,15 @@ export function useConversationMutations() {
 
   // 2. Append user message and await automated AI reply stream
   const sendMessageMutation = useMutation({
-    mutationFn: ({ id, content }: { id: string; content: string }) =>
-      conversationService.sendMessage(id, content),
+    mutationFn: ({
+      id,
+      content,
+      agentId,
+    }: {
+      id: string;
+      content: string;
+      agentId?: string;
+    }) => conversationService.sendMessage(id, content, agentId),
     onMutate: async (variables) => {
       // Cancel any outgoing refetches so they don't overwrite optimistic update
       await queryClient.cancelQueries({

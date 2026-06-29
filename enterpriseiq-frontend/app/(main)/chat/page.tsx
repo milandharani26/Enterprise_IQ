@@ -163,7 +163,18 @@ export default function ChatPage() {
         cacheBeforeSend ? `messages:${cacheBeforeSend.messages?.length}` : "no",
       );
 
-      await sendMessage({ id: currentChatId, content: text });
+      console.log("[VERIFY] Selected Assistant ID:", selectedAssistant?.id);
+      console.log(
+        "[VERIFY] Conversation Assistant ID (stored):",
+        cacheBeforeSend?.agent_id,
+      );
+      console.log("[VERIFY] Assistant used in payload:", selectedAssistant?.id);
+
+      await sendMessage({
+        id: currentChatId,
+        content: text,
+        agentId: selectedAssistant?.id,
+      });
       console.log("[VERIFY] Assistant reply received");
     } catch (err) {
       console.error("Failed to route core message pipeline invocation:", err);
@@ -232,6 +243,11 @@ export default function ChatPage() {
                     key={assistant.id}
                     type="button"
                     onClick={() => {
+                      console.log(
+                        "[VERIFY] Assistant switched to:",
+                        assistant.name,
+                        assistant.id,
+                      );
                       setSelectedAssistant(assistant);
                       setDropdownOpen(false);
                     }}
