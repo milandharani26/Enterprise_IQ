@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useDashboardStats } from "@/hooks/queries/useAnalyticsQueries";
+import { PageContent } from "@/app/_components/PageContent";
 import {
   Users,
   MessageSquare,
@@ -154,276 +155,280 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="mesh-bg min-h-full p-6 space-y-6">
-      {/* ── Hero bento ── */}
-      <motion.div
-        {...fadeUp(0)}
-        className="bento-hero p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
-      >
-        <div
-          className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none opacity-30"
-          style={{ background: "var(--gradient-brand)" }}
-        />
-
-        <div className="relative z-10">
-          <p
-            className="text-xs font-semibold uppercase tracking-widest mb-2"
-            style={{ color: "var(--color-primary)" }}
-          >
-            Welcome back
-          </p>
-          <h1
-            className="text-3xl font-bold tracking-tight"
-            style={{ color: "var(--color-text-primary)" }}
-          >
-            Good morning,{" "}
-            <span style={{ color: "var(--color-primary)" }}>{displayName}</span>{" "}
-            👋
-          </h1>
-          <p
-            className="mt-1 text-sm"
-            style={{ color: "var(--color-text-secondary)" }}
-          >
-            Here's what's happening with your workspace today.
-          </p>
-        </div>
-      </motion.div>
-
-      {/* ── Stat cards ── */}
-      {isLoading ? (
-        <div className="flex items-center justify-center p-12">
-          <Loader2
-            className="w-8 h-8 animate-spin"
-            style={{ color: "var(--color-primary)" }}
-          />
-        </div>
-      ) : isError || !stats ? (
-        <div
-          className="p-4 rounded-xl"
-          style={{ background: "var(--color-danger)", color: "#fff" }}
+    <PageContent>
+      <div className="mesh-bg min-h-full p-6 space-y-6">
+        {/* ── Hero bento ── */}
+        <motion.div
+          {...fadeUp(0)}
+          className="bento-hero p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
         >
-          Failed to load dashboard statistics.
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <motion.div {...fadeUp(0.08)}>
-              <StatCard
-                icon={MessageSquare}
-                label="Total Queries"
-                value={stats.totalQueries.toLocaleString()}
-                colorVar="var(--color-primary)"
-                glowColor="rgba(99,102,241,0.12)"
-              />
-            </motion.div>
-            <motion.div {...fadeUp(0.14)}>
-              <StatCard
-                icon={Users}
-                label="Active Users"
-                value={stats.activeUsers.toLocaleString()}
-                colorVar="#ec4899"
-                glowColor="rgba(236,72,153,0.10)"
-              />
-            </motion.div>
-            <motion.div {...fadeUp(0.2)}>
-              <StatCard
-                icon={Zap}
-                label="Avg Queries / User"
-                value={stats.avgQueriesPerUser}
-                colorVar="var(--color-success)"
-                glowColor="rgba(16,185,129,0.10)"
-              />
-            </motion.div>
-            <motion.div {...fadeUp(0.26)}>
-              <StatCard
-                icon={Activity}
-                label="Top Assistant"
-                value={stats.mostActiveAssistant}
-                colorVar="var(--color-warning)"
-                glowColor="rgba(245,158,11,0.10)"
-                valueClassName="text-xl font-bold tracking-tight"
-              />
-            </motion.div>
+          <div
+            className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none opacity-30"
+            style={{ background: "var(--gradient-brand)" }}
+          />
+
+          <div className="relative z-10">
+            <p
+              className="text-xs font-semibold uppercase tracking-widest mb-2"
+              style={{ color: "var(--color-primary)" }}
+            >
+              Welcome back
+            </p>
+            <h1
+              className="text-3xl font-bold tracking-tight"
+              style={{ color: "var(--color-text-primary)" }}
+            >
+              Good morning,{" "}
+              <span style={{ color: "var(--color-primary)" }}>
+                {displayName}
+              </span>{" "}
+              👋
+            </h1>
+            <p
+              className="mt-1 text-sm"
+              style={{ color: "var(--color-text-secondary)" }}
+            >
+              Here's what's happening with your workspace today.
+            </p>
           </div>
+        </motion.div>
 
-          {/* ── 4-col bento ── */}
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
-            {/* Model usage breakdown */}
-            <motion.div
-              {...fadeUp(0.32)}
-              className="glass-card p-5 space-y-4 xl:col-span-1"
-            >
-              <div>
-                <p
-                  className="text-[11px] font-semibold uppercase tracking-widest"
-                  style={{ color: "var(--color-text-tertiary)" }}
-                >
-                  Model Usage
-                </p>
-                <h3
-                  className="text-base font-bold mt-0.5"
-                  style={{ color: "var(--color-text-primary)" }}
-                >
-                  Breakdown
-                </h3>
-              </div>
-              <div className="space-y-4">
-                {stats.modelUsage.length === 0 ? (
-                  <p
-                    className="text-sm"
-                    style={{ color: "var(--color-text-secondary)" }}
-                  >
-                    No data available yet.
-                  </p>
-                ) : (
-                  stats.modelUsage.map((model, i) => (
-                    <ProgressBar
-                      key={model.name}
-                      label={model.name}
-                      value={Math.round(
-                        (model.usage / Math.max(1, stats.totalQueries)) * 100,
-                      )}
-                      color={colors[i % colors.length]}
-                    />
-                  ))
-                )}
-              </div>
-            </motion.div>
+        {/* ── Stat cards ── */}
+        {isLoading ? (
+          <div className="flex items-center justify-center p-12">
+            <Loader2
+              className="w-8 h-8 animate-spin"
+              style={{ color: "var(--color-primary)" }}
+            />
+          </div>
+        ) : isError || !stats ? (
+          <div
+            className="p-4 rounded-xl"
+            style={{ background: "var(--color-danger)", color: "#fff" }}
+          >
+            Failed to load dashboard statistics.
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              <motion.div {...fadeUp(0.08)}>
+                <StatCard
+                  icon={MessageSquare}
+                  label="Total Queries"
+                  value={stats.totalQueries.toLocaleString()}
+                  colorVar="var(--color-primary)"
+                  glowColor="rgba(99,102,241,0.12)"
+                />
+              </motion.div>
+              <motion.div {...fadeUp(0.14)}>
+                <StatCard
+                  icon={Users}
+                  label="Active Users"
+                  value={stats.activeUsers.toLocaleString()}
+                  colorVar="#ec4899"
+                  glowColor="rgba(236,72,153,0.10)"
+                />
+              </motion.div>
+              <motion.div {...fadeUp(0.2)}>
+                <StatCard
+                  icon={Zap}
+                  label="Avg Queries / User"
+                  value={stats.avgQueriesPerUser}
+                  colorVar="var(--color-success)"
+                  glowColor="rgba(16,185,129,0.10)"
+                />
+              </motion.div>
+              <motion.div {...fadeUp(0.26)}>
+                <StatCard
+                  icon={Activity}
+                  label="Top Assistant"
+                  value={stats.mostActiveAssistant}
+                  colorVar="var(--color-warning)"
+                  glowColor="rgba(245,158,11,0.10)"
+                  valueClassName="text-xl font-bold tracking-tight"
+                />
+              </motion.div>
+            </div>
 
-            {/* Recent Queries Feed */}
-            <motion.div
-              {...fadeUp(0.38)}
-              className="glass-card p-5 space-y-4 xl:col-span-2"
-            >
-              <div>
-                <p
-                  className="text-[11px] font-semibold uppercase tracking-widest"
-                  style={{ color: "var(--color-text-tertiary)" }}
-                >
-                  Live Feed
-                </p>
-                <h3
-                  className="text-base font-bold mt-0.5"
-                  style={{ color: "var(--color-text-primary)" }}
-                >
-                  Recent Queries
-                </h3>
-              </div>
-              <div className="space-y-3">
-                {stats.recentQueries.length === 0 ? (
+            {/* ── 4-col bento ── */}
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+              {/* Model usage breakdown */}
+              <motion.div
+                {...fadeUp(0.32)}
+                className="glass-card p-5 space-y-4 xl:col-span-1"
+              >
+                <div>
                   <p
-                    className="text-sm"
-                    style={{ color: "var(--color-text-secondary)" }}
+                    className="text-[11px] font-semibold uppercase tracking-widest"
+                    style={{ color: "var(--color-text-tertiary)" }}
                   >
-                    No recent activity found.
+                    Model Usage
                   </p>
-                ) : (
-                  stats.recentQueries.map((query) => (
-                    <div
-                      key={query.id}
-                      className="p-3 rounded-lg flex gap-3 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                  <h3
+                    className="text-base font-bold mt-0.5"
+                    style={{ color: "var(--color-text-primary)" }}
+                  >
+                    Breakdown
+                  </h3>
+                </div>
+                <div className="space-y-4">
+                  {stats.modelUsage.length === 0 ? (
+                    <p
+                      className="text-sm"
+                      style={{ color: "var(--color-text-secondary)" }}
                     >
-                      <div className="mt-1 shrink-0">
-                        <MessageSquare
-                          className="w-4 h-4"
-                          style={{ color: "var(--color-primary)" }}
-                        />
-                      </div>
-                      <div className="flex-1 overflow-hidden">
-                        <p
-                          className="text-sm truncate"
-                          style={{ color: "var(--color-text-primary)" }}
-                        >
-                          "{query.content}"
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span
-                            className="text-xs font-medium"
-                            style={{ color: "var(--color-text-secondary)" }}
-                          >
-                            {query.user_email}
-                          </span>
-                          <span
-                            className="text-[10px] uppercase opacity-50"
-                            style={{ color: "var(--color-text-tertiary)" }}
-                          >
-                            • {dayjs(query.created_at).fromNow()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </motion.div>
+                      No data available yet.
+                    </p>
+                  ) : (
+                    stats.modelUsage.map((model, i) => (
+                      <ProgressBar
+                        key={model.name}
+                        label={model.name}
+                        value={Math.round(
+                          (model.usage / Math.max(1, stats.totalQueries)) * 100,
+                        )}
+                        color={colors[i % colors.length]}
+                      />
+                    ))
+                  )}
+                </div>
+              </motion.div>
 
-            {/* Common Questions */}
-            <motion.div
-              {...fadeUp(0.44)}
-              className="glass-card p-5 space-y-4 xl:col-span-1"
-            >
-              <div>
-                <p
-                  className="text-[11px] font-semibold uppercase tracking-widest"
-                  style={{ color: "var(--color-text-tertiary)" }}
-                >
-                  Insights
-                </p>
-                <h3
-                  className="text-base font-bold mt-0.5"
-                  style={{ color: "var(--color-text-primary)" }}
-                >
-                  Common Questions
-                </h3>
-              </div>
-              <div className="space-y-3">
-                {!stats.commonQuestions ||
-                stats.commonQuestions.length === 0 ? (
+              {/* Recent Queries Feed */}
+              <motion.div
+                {...fadeUp(0.38)}
+                className="glass-card p-5 space-y-4 xl:col-span-2"
+              >
+                <div>
                   <p
-                    className="text-sm"
-                    style={{ color: "var(--color-text-secondary)" }}
+                    className="text-[11px] font-semibold uppercase tracking-widest"
+                    style={{ color: "var(--color-text-tertiary)" }}
                   >
-                    No common questions found.
+                    Live Feed
                   </p>
-                ) : (
-                  stats.commonQuestions.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 rounded-lg flex items-center justify-between transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                  <h3
+                    className="text-base font-bold mt-0.5"
+                    style={{ color: "var(--color-text-primary)" }}
+                  >
+                    Recent Queries
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {stats.recentQueries.length === 0 ? (
+                    <p
+                      className="text-sm"
+                      style={{ color: "var(--color-text-secondary)" }}
                     >
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                          style={{
-                            background: "rgba(99,102,241,0.1)",
-                            color: "var(--color-primary)",
-                          }}
-                        >
-                          <span className="text-xs font-semibold">
-                            {idx + 1}
-                          </span>
-                        </div>
-                        <p
-                          className="text-sm truncate"
-                          style={{ color: "var(--color-text-primary)" }}
-                        >
-                          "{item.question}"
-                        </p>
-                      </div>
-                      <span
-                        className="text-xs font-medium ml-2"
-                        style={{ color: "var(--color-text-secondary)" }}
+                      No recent activity found.
+                    </p>
+                  ) : (
+                    stats.recentQueries.map((query) => (
+                      <div
+                        key={query.id}
+                        className="p-3 rounded-lg flex gap-3 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                       >
-                        {item.count}x
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </motion.div>
-          </div>
-        </>
-      )}
-    </div>
+                        <div className="mt-1 shrink-0">
+                          <MessageSquare
+                            className="w-4 h-4"
+                            style={{ color: "var(--color-primary)" }}
+                          />
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                          <p
+                            className="text-sm truncate"
+                            style={{ color: "var(--color-text-primary)" }}
+                          >
+                            "{query.content}"
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span
+                              className="text-xs font-medium"
+                              style={{ color: "var(--color-text-secondary)" }}
+                            >
+                              {query.user_email}
+                            </span>
+                            <span
+                              className="text-[10px] uppercase opacity-50"
+                              style={{ color: "var(--color-text-tertiary)" }}
+                            >
+                              • {dayjs(query.created_at).fromNow()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Common Questions */}
+              <motion.div
+                {...fadeUp(0.44)}
+                className="glass-card p-5 space-y-4 xl:col-span-1"
+              >
+                <div>
+                  <p
+                    className="text-[11px] font-semibold uppercase tracking-widest"
+                    style={{ color: "var(--color-text-tertiary)" }}
+                  >
+                    Insights
+                  </p>
+                  <h3
+                    className="text-base font-bold mt-0.5"
+                    style={{ color: "var(--color-text-primary)" }}
+                  >
+                    Common Questions
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {!stats.commonQuestions ||
+                  stats.commonQuestions.length === 0 ? (
+                    <p
+                      className="text-sm"
+                      style={{ color: "var(--color-text-secondary)" }}
+                    >
+                      No common questions found.
+                    </p>
+                  ) : (
+                    stats.commonQuestions.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3 rounded-lg flex items-center justify-between transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                      >
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <div
+                            className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                            style={{
+                              background: "rgba(99,102,241,0.1)",
+                              color: "var(--color-primary)",
+                            }}
+                          >
+                            <span className="text-xs font-semibold">
+                              {idx + 1}
+                            </span>
+                          </div>
+                          <p
+                            className="text-sm truncate"
+                            style={{ color: "var(--color-text-primary)" }}
+                          >
+                            "{item.question}"
+                          </p>
+                        </div>
+                        <span
+                          className="text-xs font-medium ml-2"
+                          style={{ color: "var(--color-text-secondary)" }}
+                        >
+                          {item.count}x
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </div>
+    </PageContent>
   );
 }
