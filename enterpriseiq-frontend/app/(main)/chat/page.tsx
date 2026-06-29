@@ -562,6 +562,18 @@ export default function ChatPage() {
                                   {...props}
                                 />
                               ),
+                              table: ({ node, ...props }) => (
+                                <div
+                                  style={{
+                                    width: "100%",
+                                    maxWidth: "100%",
+                                    overflowX: "auto",
+                                    WebkitOverflowScrolling: "touch",
+                                  }}
+                                >
+                                  <table {...props} />
+                                </div>
+                              ),
                             }}
                           >
                             {msg.content}
