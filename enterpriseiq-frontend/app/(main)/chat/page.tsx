@@ -15,6 +15,7 @@ import { useConversationDetails } from "@/hooks/queries/useConversationQueries";
 import { useConversationMutations } from "@/hooks/mutations/useConversationMutation";
 import { useQueryClient } from "@tanstack/react-query";
 import { assistant as AssistantType } from "@/types/assistants";
+import { ConversationDetails } from "@/services/conversationService";
 
 interface Message {
   id: string;
@@ -153,7 +154,7 @@ export default function ChatPage() {
         console.log("[VERIFY] Active conversation updated");
       }
 
-      const cacheBeforeSend = queryClient.getQueryData([
+      const cacheBeforeSend = queryClient.getQueryData<ConversationDetails>([
         "conversation-details",
         currentChatId,
       ]);
