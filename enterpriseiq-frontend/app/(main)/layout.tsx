@@ -9,6 +9,11 @@ import {
 } from "react";
 import Sidebar from "../_components/Sidebar";
 import { Menu } from "lucide-react"; // Import the Hamburger Icon
+import dynamic from "next/dynamic";
+
+const WebsiteTour = dynamic(() => import("@/components/WebsiteTour"), {
+  ssr: false,
+});
 
 interface WorkspaceContextType {
   sidebarOpen: boolean;
@@ -52,6 +57,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     <WorkspaceContext.Provider
       value={{ sidebarOpen, setSidebarOpen, activeChat, setActiveChat }}
     >
+      <WebsiteTour />
       <div className="flex h-screen w-screen overflow-hidden relative mesh-bg p-0 lg:p-4 gap-4">
         {/* Backdrop for Mobile & Tablet view only (Handles click-outside closing) */}
         {sidebarOpen && (

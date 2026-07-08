@@ -307,6 +307,7 @@ export default function UsersManagementPage() {
             </div>
             <div>
               <h1
+                id="tour-users-title"
                 className="text-xl font-bold tracking-tight"
                 style={{ color: "var(--color-text-primary)" }}
               >
@@ -320,13 +321,17 @@ export default function UsersManagementPage() {
               </p>
             </div>
           </div>
-          <button className="btn-gradient px-4 py-2.5 text-sm rounded-xl flex items-center gap-2 self-start sm:self-auto">
+          <button
+            id="tour-users-add-button"
+            className="btn-gradient px-4 py-2.5 text-sm rounded-xl flex items-center gap-2 self-start sm:self-auto"
+          >
             <Plus className="w-4 h-4" /> Add User
           </button>
         </motion.div>
 
         {/* ── Table card ── */}
         <motion.div
+          id="tour-users-table"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
