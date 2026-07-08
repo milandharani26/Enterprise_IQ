@@ -510,3 +510,118 @@ label[for],
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: var(--color-primary);
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   REACT JOYRIDE GLASSMORPHISM THEMING
+   ════════════════════════════════════════════════════════════════════════════ */
+.react-joyride__tooltip {
+  background: var(--color-bg-elevated) !important;
+  backdrop-filter: blur(32px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(200%) !important;
+  border: 1px solid var(--color-border-primary) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-lg) !important;
+  padding: 24px 20px !important;
+  font-family: var(--font-sans), sans-serif !important;
+}
+
+/* Tooltip Header/Title */
+.react-joyride__tooltip h4 {
+  font-weight: 700 !important;
+  font-size: 16px !important;
+  line-height: 1.3 !important;
+  color: var(--color-text-primary) !important;
+  margin-bottom: 8px !important;
+  margin-top: 0 !important;
+}
+
+/* Tooltip Body/Content */
+.react-joyride__tooltip div {
+  font-size: 13.5px !important;
+  color: var(--color-text-secondary) !important;
+  line-height: 1.55 !important;
+}
+
+/* Override the arrow color to match the glass background precisely */
+.react-joyride__tooltip [data-placement] > div {
+  border-top-color: var(--color-bg-primary) !important;
+  border-bottom-color: var(--color-bg-primary) !important;
+  border-left-color: var(--color-bg-primary) !important;
+  border-right-color: var(--color-bg-primary) !important;
+}
+
+/* Standard navigation buttons inside Joyride */
+.react-joyride__tooltip button {
+  font-family: var(--font-sans), sans-serif !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+/* Next / Primary Button */
+.react-joyride__tooltip button[data-action="primary"] {
+  background: var(--gradient-brand) !important;
+  color: var(--color-primary-foreground) !important;
+  border-radius: 100px !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  padding: 8px 18px !important;
+  border: none !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.react-joyride__tooltip button[data-action="primary"]:hover {
+  box-shadow: var(--shadow-glow) !important;
+  transform: translateY(-1px) !important;
+}
+
+.react-joyride__tooltip button[data-action="primary"]:active {
+  transform: scale(0.96) !important;
+}
+
+/* Back Button */
+.react-joyride__tooltip button[data-action="back"] {
+  color: var(--color-text-secondary) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  background: transparent !important;
+  border: none !important;
+  margin-right: 12px !important;
+}
+
+.react-joyride__tooltip button[data-action="back"]:hover {
+  color: var(--color-text-primary) !important;
+}
+
+/* Skip Button */
+.react-joyride__tooltip button[data-action="skip"] {
+  color: var(--color-text-tertiary) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.react-joyride__tooltip button[data-action="skip"]:hover {
+  color: var(--color-text-primary) !important;
+}
+
+/* Close Icon Button */
+.react-joyride__tooltip button[aria-label="Close"] {
+  color: var(--color-text-tertiary) !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.react-joyride__tooltip button[aria-label="Close"]:hover {
+  color: var(--color-text-primary) !important;
+}
+
+/* Spotlight Overlay Style (Ensure it blends beautifully) */
+.react-joyride__spotlight {
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65) !important;
+}
+
+.dark .react-joyride__spotlight {
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.8) !important;
+}

@@ -234,6 +234,7 @@ export default function RolesPage() {
             </div>
             <div>
               <h1
+                id="tour-roles-title"
                 className="text-xl font-bold tracking-tight"
                 style={{ color: "var(--color-text-primary)" }}
               >
@@ -249,6 +250,7 @@ export default function RolesPage() {
           </div>
           <div className="flex gap-2 self-start sm:self-auto">
             <button
+              id="tour-roles-sync-button"
               onClick={handleSyncAssistants}
               disabled={isSyncing}
               className="glass-card px-4 py-2.5 text-sm rounded-xl flex items-center gap-2 transition-colors hover:bg-white/5 disabled:opacity-50"
@@ -265,7 +267,10 @@ export default function RolesPage() {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div
+          id="tour-roles-container"
+          className="grid grid-cols-1 lg:grid-cols-3 gap-5"
+        >
           {/* ── Dynamic Role Cards ── */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}

@@ -153,7 +153,7 @@ export default function ChatPage() {
         console.log("[VERIFY] Active conversation updated");
       }
 
-      const cacheBeforeSend = queryClient.getQueryData([
+      const cacheBeforeSend = queryClient.getQueryData<any>([
         "conversation-details",
         currentChatId,
       ]);

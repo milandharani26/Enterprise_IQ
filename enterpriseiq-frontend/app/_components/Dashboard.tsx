@@ -159,6 +159,7 @@ export default function Dashboard() {
       <div className="mesh-bg min-h-full p-6 space-y-6">
         {/* ── Hero bento ── */}
         <motion.div
+          id="tour-dashboard-welcome"
           {...fadeUp(0)}
           className="bento-hero p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
         >
@@ -210,7 +211,10 @@ export default function Dashboard() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div
+              id="tour-dashboard-stats"
+              className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"
+            >
               <motion.div {...fadeUp(0.08)}>
                 <StatCard
                   icon={MessageSquare}
@@ -254,6 +258,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
               {/* Model usage breakdown */}
               <motion.div
+                id="tour-dashboard-model-usage"
                 {...fadeUp(0.32)}
                 className="glass-card p-5 space-y-4 xl:col-span-1"
               >
@@ -296,6 +301,7 @@ export default function Dashboard() {
 
               {/* Recent Queries Feed */}
               <motion.div
+                id="tour-dashboard-recent-queries"
                 {...fadeUp(0.38)}
                 className="glass-card p-5 space-y-4 xl:col-span-2"
               >
@@ -363,6 +369,7 @@ export default function Dashboard() {
 
               {/* Common Questions */}
               <motion.div
+                id="tour-dashboard-insights"
                 {...fadeUp(0.44)}
                 className="glass-card p-5 space-y-4 xl:col-span-1"
               >
