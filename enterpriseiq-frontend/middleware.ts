@@ -31,13 +31,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Redirect root to chat (or sign-in depending on auth)
+  // Redirect root to chat if logged in
   if (pathname === "/") {
     if (hasToken) {
       return NextResponse.redirect(new URL("/chat", request.url));
-    } else {
-      return NextResponse.redirect(new URL("/sign-in", request.url));
     }
+    return NextResponse.next();
   }
 
   return NextResponse.next();
