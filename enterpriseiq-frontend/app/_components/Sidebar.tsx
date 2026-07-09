@@ -459,10 +459,9 @@ export default function Sidebar() {
 
               {/* Sign out button */}
               <button
-                onClick={async () => {
+                onClick={() => {
                   setProfileOpen(false);
-                  await logout();
-                  router.push("/sign-in");
+                  logout();
                 }}
                 disabled={isLoggingOut}
                 className="w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-40"

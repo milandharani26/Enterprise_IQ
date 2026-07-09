@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "dev:backend": "npm run start:dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix enterpriseiq-frontend",
+    "dev": "concurrently \"npm:dev:backend\" \"npm:dev:frontend\""
   },
   "devDependencies": {
+    "concurrently": "^8.2.2",
     "husky": "^9.0.0",
     "lint-staged": "^16.0.0",
     "prettier": "^3.8.4"
