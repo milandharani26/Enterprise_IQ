@@ -19,6 +19,7 @@ interface FastApiChatResponse {
   role: string;
   content: string;
 }
+
 @Injectable()
 export class ConversationsService {
   constructor(

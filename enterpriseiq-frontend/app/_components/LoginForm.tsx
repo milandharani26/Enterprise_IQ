@@ -78,15 +78,6 @@ export function LoginForm() {
     if (!password) {
       setPasswordError("Password is required.");
       hasError = true;
-    } else {
-      const hasCapital = /[A-Z]/.test(password);
-      const hasNumber = /\d/.test(password);
-      const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':",./<>?]/.test(password);
-      const isValidLength = password.length >= 6 && password.length <= 8;
-      if (!isValidLength || !hasCapital || !hasNumber || !hasSymbol) {
-        setPasswordError("Must be 6–8 chars with a capital, number & symbol.");
-        hasError = true;
-      }
     }
 
     if (hasError) {
