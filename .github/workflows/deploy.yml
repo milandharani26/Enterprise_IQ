@@ -46,7 +46,7 @@ jobs:
             export DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             
             # Pull the latest image from Docker Hub
-            sudo -E docker compose pull
+            sudo DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} docker compose pull
             
             # Start/Restart the containers in the background
-            sudo -E docker compose up -d
+            sudo DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} docker compose up -d
