@@ -1,0 +1,11 @@
+node_modules
+backend/node_modules
+enterpriseiq-frontend/node_modules
+backend/dist
+enterpriseiq-frontend/out
+enterpriseiq-frontend/.next
+.git
+.env
+.github
+*.md
+docker-compose.yml

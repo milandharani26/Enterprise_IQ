@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    networks:
+      - enterpriseiq-network
+
+  app:
+    # We use a placeholder image name that will be built/pulled from Docker Hub
+    # When testing locally, you can change this to `build: .`
+    image: ${DOCKERHUB_USERNAME:-local}/enterpriseiq:latest
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - enterpriseiq-network
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-man@1610}
+      POSTGRES_DB: ${DB_DATABASE:-enterpriseiq}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-enterpriseiq}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - enterpriseiq-network
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - enterpriseiq-network
+
+networks:
+  enterpriseiq-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
