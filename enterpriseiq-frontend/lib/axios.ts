@@ -2,7 +2,11 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 
 // Create a custom axios instance pointing at the NestJS backend
 export const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000",
+  baseURL:
+    process.env.NEXT_PUBLIC_API_URL ||
+    (process.env.NODE_ENV === "production"
+      ? "/api"
+      : "http://localhost:3001/api"),
   timeout: 60000,
   withCredentials: true, // Required so httpOnly cookies (accessToken / refreshToken) are sent
   headers: {
@@ -62,7 +66,7 @@ apiClient.interceptors.response.use(
 
         try {
           await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/auth/refresh`,
+            `${process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "/api" : "http://localhost:3001/api")}/auth/refresh`,
             { withCredentials: true },
           );
 

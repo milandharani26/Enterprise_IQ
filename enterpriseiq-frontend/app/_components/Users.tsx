@@ -320,9 +320,6 @@ export default function UsersManagementPage() {
               </p>
             </div>
           </div>
-          <button className="btn-gradient px-4 py-2.5 text-sm rounded-xl flex items-center gap-2 self-start sm:self-auto">
-            <Plus className="w-4 h-4" /> Add User
-          </button>
         </motion.div>
 
         {/* ── Table card ── */}

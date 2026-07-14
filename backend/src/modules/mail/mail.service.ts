@@ -20,7 +20,7 @@ export class MailService {
   }
 
   async sendPasswordResetEmail(to: string, token: string) {
-    const resetLink = `http://localhost:3000/reset-password?token=${token}`;
+    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:4000'}/reset-password?token=${token}`;
 
     // Log it so you can test without real SMTP!
     this.logger.log(`\n\n[PASSWORD RESET LINK FOR ${to}]\n${resetLink}\n\n`);

@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "build:frontend": "npm run build --prefix enterpriseiq-frontend",
+    "build:backend": "npm run build --prefix backend",
+    "build": "npm run build:frontend && npm run build:backend",
+    "start": "npm run start:prod --prefix backend"
   },
   "devDependencies": {
     "husky": "^9.0.0",

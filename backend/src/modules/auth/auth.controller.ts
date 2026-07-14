@@ -51,7 +51,7 @@ export class AuthController {
       req.user as { email?: string },
     );
     this.setTokensInCookies(res, tokens);
-    res.redirect('http://localhost:3000'); // Redirect to frontend/home
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:4000'}/chat`); // Redirect to frontend chat
   }
 
   @Public()

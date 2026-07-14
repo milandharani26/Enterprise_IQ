@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AccessTokenGuard } from './common/guards/access-token.guard';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -18,6 +20,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: ['../.env', '.env'],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -32,6 +35,12 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
         synchronize: false, // Using migrations instead
       }),
       inject: [ConfigService],
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', '..', 'enterpriseiq-frontend', 'out'),
+      serveStaticOptions: {
+        extensions: ['html'], // Required for Next.js static export which generates .html files
+      },
     }),
     RedisModule.forRootAsync({
       imports: [ConfigModule],
