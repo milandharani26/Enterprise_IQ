@@ -16,10 +16,13 @@ services:
     # We use a placeholder image name that will be built/pulled from Docker Hub
     # When testing locally, you can change this to `build: .`
     image: ${DOCKERHUB_USERNAME:-local}/enterpriseiq:latest
+    ports:
+      - "4000:4000"
     env_file:
       - .env
     environment:
       - DB_HOST=postgres
+      - DB_PORT=5432
       - REDIS_HOST=redis
     depends_on:
       postgres:

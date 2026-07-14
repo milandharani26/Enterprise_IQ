@@ -33,6 +33,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
         database: configService.get<string>('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: false, // Using migrations instead
+        migrationsRun: true, // Automatically run migrations on app start
+        migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
       }),
       inject: [ConfigService],
     }),
