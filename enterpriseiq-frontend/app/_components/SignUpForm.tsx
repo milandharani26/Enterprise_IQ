@@ -83,9 +83,9 @@ export function SignUpForm() {
       const hasCapital = /[A-Z]/.test(password);
       const hasNumber = /\d/.test(password);
       const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':",./<>?]/.test(password);
-      const isValidLength = password.length >= 6 && password.length <= 8;
+      const isValidLength = password.length >= 8 && password.length <= 12;
       if (!isValidLength || !hasCapital || !hasNumber || !hasSymbol) {
-        setPasswordError("Must be 6–8 chars with a capital, number & symbol.");
+        setPasswordError("Must be 8–12 chars with a capital, number & symbol.");
         hasError = true;
       }
     }

@@ -307,6 +307,7 @@ export default function UsersManagementPage() {
             </div>
             <div>
               <h1
+                id="tour-users-title"
                 className="text-xl font-bold tracking-tight"
                 style={{ color: "var(--color-text-primary)" }}
               >
@@ -324,6 +325,7 @@ export default function UsersManagementPage() {
 
         {/* ── Table card ── */}
         <motion.div
+          id="tour-users-table"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}

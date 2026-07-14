@@ -171,6 +171,7 @@ export default function Sidebar() {
 
   return (
     <motion.aside
+      id="tour-sidebar"
       variants={sidebarVariants}
       animate={sidebarOpen ? "open" : "collapsed"}
       transition={{ duration: 0.22, ease: "easeInOut" }}
@@ -183,7 +184,10 @@ export default function Sidebar() {
       >
         {sidebarOpen ? (
           <>
-            <div className="flex items-center gap-2.5 overflow-hidden">
+            <div
+              id="tour-logo"
+              className="flex items-center gap-2.5 overflow-hidden"
+            >
               <div
                 className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
                 style={{
@@ -208,6 +212,7 @@ export default function Sidebar() {
               </span>
             </div>
             <button
+              id="tour-sidebar-toggle"
               onClick={() => setSidebarOpen(false)}
               className="p-1 rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/5"
               style={{ color: "var(--color-text-secondary)" }}
@@ -217,6 +222,7 @@ export default function Sidebar() {
           </>
         ) : (
           <button
+            id="tour-sidebar-toggle"
             onClick={() => setSidebarOpen(true)}
             className="hidden lg:block mx-auto p-1.5 rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/5"
             style={{ color: "var(--color-text-primary)" }}
@@ -229,6 +235,7 @@ export default function Sidebar() {
       {/* CORE ROUTING NAVIGATION BUTTONS */}
       <div className="px-3 pt-4 space-y-2 flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin">
         <button
+          id="tour-new-chat"
           onClick={handleNewChatInit}
           className={`btn-gradient w-full flex items-center transition-all duration-150 ${
             sidebarOpen ? "px-3 py-2 gap-2 text-sm" : "p-2.5 justify-center"
@@ -243,6 +250,7 @@ export default function Sidebar() {
 
         {/* RECENT CONVERSATIONS SUB-LIST */}
         <div
+          id="tour-recent-chats"
           className="space-y-1 pt-4 mt-2"
           style={{ borderTop: "1px solid var(--color-border-primary)" }}
         >
@@ -318,6 +326,7 @@ export default function Sidebar() {
         {/* MANAGEMENT LINK ITEMS */}
         {menuItems.length > 0 && (
           <div
+            id="tour-management-links"
             className="space-y-1.5 pt-4"
             style={{ borderTop: "1px solid var(--auth-edge-line)" }}
           >
@@ -362,6 +371,7 @@ export default function Sidebar() {
         style={{ borderTop: "1px solid var(--color-border-primary)" }}
       >
         <button
+          id="tour-theme-toggle"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           className={`w-full flex items-center rounded-xl transition-all duration-150 hover:bg-black/5 dark:hover:bg-white/5 ${
             sidebarOpen ? "px-3 py-2 gap-3" : "p-2 justify-center"
@@ -429,12 +439,29 @@ export default function Sidebar() {
                 </p>
               </div>
 
+              {/* Restart Tour button */}
+              <button
+                onClick={() => {
+                  setProfileOpen(false);
+                  window.dispatchEvent(new Event("restart-tour"));
+                }}
+                className="w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 border-b"
+                style={{
+                  color: "var(--color-primary)",
+                  borderColor: "var(--color-border-primary)",
+                }}
+              >
+                <span className="w-3.5 h-3.5 flex items-center justify-center text-[13px]">
+                  ✨
+                </span>
+                Restart Tour
+              </button>
+
               {/* Sign out button */}
               <button
-                onClick={async () => {
+                onClick={() => {
                   setProfileOpen(false);
-                  await logout();
-                  router.push("/sign-in");
+                  logout();
                 }}
                 disabled={isLoggingOut}
                 className="w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-40"
@@ -453,6 +480,7 @@ export default function Sidebar() {
 
         {/* AVATAR TRIGGER BUTTON */}
         <button
+          id="tour-profile"
           onClick={() => setProfileOpen(!profileOpen)}
           className={`w-full flex items-center rounded-xl transition-all hover:bg-black/5 dark:hover:bg-white/5 ${
             sidebarOpen ? "px-3 py-2.5 gap-3" : "p-1.5 justify-center"

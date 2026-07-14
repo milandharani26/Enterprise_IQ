@@ -10,7 +10,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { AuthDto } from './dto/auth.dto';
+import { AuthDto, SignupDto } from './dto/auth.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Public } from '../../common/decorators/public.decorator';
@@ -86,10 +86,10 @@ export class AuthController {
     description: 'Bad Request (e.g., email already exists).',
   })
   async signup(
-    @Body() authDto: AuthDto,
+    @Body() signupDto: SignupDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const tokens = await this.authService.signUp(authDto);
+    const tokens = await this.authService.signUp(signupDto);
     this.setTokensInCookies(res, tokens);
     return { success: true, message: 'Signed up successfully' };
   }

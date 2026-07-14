@@ -6,7 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
-import { AuthDto } from './dto/auth.dto';
+import { AuthDto, SignupDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { MailService } from '../mail/mail.service';
@@ -22,15 +22,15 @@ export class AuthService {
     @InjectRedis() private readonly redis: Redis,
   ) {}
 
-  async signUp(authDto: AuthDto) {
-    const userExists = await this.usersService.findByEmail(authDto.email);
+  async signUp(signupDto: SignupDto) {
+    const userExists = await this.usersService.findByEmail(signupDto.email);
     if (userExists) {
       throw new BadRequestException('User already exists');
     }
 
-    const hashedPassword = await this.hashData(authDto.password);
+    const hashedPassword = await this.hashData(signupDto.password);
     const newUser = await this.usersService.create({
-      email: authDto.email,
+      email: signupDto.email,
       password: hashedPassword,
     });
 

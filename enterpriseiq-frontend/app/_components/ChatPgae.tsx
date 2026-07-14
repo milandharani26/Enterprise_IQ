@@ -288,6 +288,7 @@ export default function ChatPage() {
               {/* Main Content Layer */}
               <div className="relative z-10 bg-transparent">
                 <textarea
+                  id="tour-chat-input"
                   ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}

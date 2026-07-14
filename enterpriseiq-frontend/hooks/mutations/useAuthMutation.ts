@@ -111,15 +111,29 @@ export function useResetPasswordMutation() {
 }
 
 export function useLogout() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: authService.logout,
     onSuccess: () => {
-      // 1. Invalidate the management list query cache pool
-      queryClient.invalidateQueries({ queryKey: ["all-users"] });
+      // Clear client-side token
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("access_token");
+      }
 
-      // 2. Invalidate the active session profiles state pool
-      queryClient.invalidateQueries({ queryKey: ["me"] });
+      // Invalidate all cached queries so stale user data is not reused
+      queryClient.clear();
+
+      // Redirect to sign-in page
+      router.push("/sign-in");
+    },
+    onError: () => {
+      // Even if the API call fails, force logout on the client side
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("access_token");
+      }
+      queryClient.clear();
+      router.push("/sign-in");
     },
   });
 }
