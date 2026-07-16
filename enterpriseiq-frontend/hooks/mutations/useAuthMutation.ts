@@ -46,7 +46,7 @@ export function useLoginMutation() {
       }
 
       toast.success("Welcome back!");
-      router.push("/");
+      router.push("/chat");
     },
 
     onError: (error) => {
@@ -70,7 +70,7 @@ export function useRegisterMutation() {
       }
 
       toast.success("Account created successfully!");
-      router.push("/");
+      router.push("/chat");
     },
 
     onError: (error) => {
